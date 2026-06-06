@@ -1,36 +1,72 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# DenizMedia
 
-## Getting Started
+Sosyal medya platformu - Paylaş, etkileş, popülerleş!
 
-First, run the development server:
+## Özellikler
+
+- **Kayıt/Giriş Sistemi**: Email doğrulama kodu ile güvenli kayıt
+- **Profil Sistemi**: Dosya yükleme ile profil fotoğrafı, kullanıcı adı, biyografi
+- **Gönderi Paylaşımı**: Metin + fotoğraf paylaşımı (max 500 karakter)
+- **Etkileşim**: Beğeni, yorum, takip sistemi
+- **DM (Özel Mesajlaşma)**: Kullanıcılar arası özel sohbet
+- **Admin Paneli**: Kullanıcı yönetimi, ban, mavi tik, timeout, erişim engeli
+- **IP Kayıt**: Giriş yapan kullanıcıların IP adresleri veritabanına kaydedilir
+- **Modern Arayüz**: Glassmorphism tasarım, animasyonlu arka plan
+
+## Teknoloji
+
+- **Framework**: Next.js 14 (App Router)
+- **Veritabanı**: PostgreSQL + Prisma ORM
+- **Auth**: NextAuth.js (Credentials)
+- **Dosya Depolama**: Vercel Blob (production) / Lokal (development)
+- **Styling**: Tailwind CSS
+- **Dil**: TypeScript
+
+## Lokal Kurulum
 
 ```bash
+# Bağımlılıkları yükle
+npm install
+
+# .env dosyasını oluştur
+cp .env.example .env
+# DATABASE_URL'yi kendi PostgreSQL bağlantı stringinle güncelle
+
+# Veritabanı tablolarını oluştur
+npx prisma db push
+
+# Geliştirme sunucusunu başlat
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Tarayıcıda [http://localhost:3000](http://localhost:3000) adresini açın.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Vercel'e Deploy
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. [neon.tech](https://neon.tech) adresinden ücretsiz PostgreSQL veritabanı oluştur
+2. [vercel.com](https://vercel.com) adresinden GitHub ile giriş yap
+3. Bu repoyu "Import Project" ile ekle
+4. Environment Variables bölümüne şunları ekle:
+   - `DATABASE_URL` — Neon'dan aldığın bağlantı stringi
+   - `NEXTAUTH_SECRET` — Rastgele güçlü bir şifre (ör: `openssl rand -base64 32`)
+   - `NEXTAUTH_URL` — Vercel'in vereceği URL (ör: `https://denizmedia.vercel.app`)
+   - `BLOB_READ_WRITE_TOKEN` — Vercel Blob Storage token'ı (Vercel Dashboard → Storage → Create → Blob)
+5. Deploy butonuna bas
 
-## Learn More
+## Ortam Değişkenleri
 
-To learn more about Next.js, take a look at the following resources:
+| Değişken | Açıklama |
+|---|---|
+| `DATABASE_URL` | PostgreSQL bağlantı stringi |
+| `NEXTAUTH_SECRET` | NextAuth şifreleme anahtarı |
+| `NEXTAUTH_URL` | Uygulama URL'si |
+| `ADMIN_IP` | Admin girişine izin verilen IP (`*` = tümü) |
+| `BLOB_READ_WRITE_TOKEN` | Vercel Blob dosya depolama token'ı (opsiyonel, sadece production) |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Admin Paneli
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+`/admin` adresinden admin paneline erişebilirsiniz.
+- Kullanıcı adı: `admin`
+- Şifre: `admin`
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Admin ilk giriş yapıldığında otomatik olarak oluşturulur.
