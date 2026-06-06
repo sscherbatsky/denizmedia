@@ -44,57 +44,69 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="w-full max-w-sm">
+    <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
+      {/* Animated background */}
+      <div className="absolute inset-0 z-0">
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-950 via-blue-950/30 to-gray-950" />
+        <div className="wave-bg" />
+        <div className="floating-circles" />
+      </div>
+
+      <div className="w-full max-w-sm relative z-10">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white">
-            deniz<span className="text-blue-500">media</span>
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <img src="/logo.png" alt="DenizMedia" className="w-16 h-16 object-contain" />
+          </div>
+          <h1 className="text-4xl font-bold">
+            <span className="text-white">deniz</span><span className="text-blue-500">media</span>
           </h1>
-          <p className="text-gray-400 mt-2">Giriş yap ve paylaşmaya başla</p>
+          <p className="text-gray-400 mt-2 text-sm">Paylaş · Keşfet · Bağlan</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {error && (
-            <div className="bg-red-900/50 border border-red-800 text-red-300 text-sm rounded-lg p-3">
-              {error}
+        <div className="bg-gray-900/80 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-6 shadow-2xl">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <div className="bg-red-900/50 border border-red-800 text-red-300 text-sm rounded-xl p-3">
+                {error}
+              </div>
+            )}
+
+            <div>
+              <input
+                type="text"
+                value={login}
+                onChange={(e) => setLogin(e.target.value)}
+                placeholder="Email veya kullanıcı adı"
+                className="w-full bg-gray-800/50 text-white border border-gray-700/50 rounded-xl px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/50 transition"
+                required
+              />
             </div>
-          )}
 
-          <div>
-            <input
-              type="text"
-              value={login}
-              onChange={(e) => setLogin(e.target.value)}
-              placeholder="Email veya kullanıcı adı"
-              className="w-full bg-gray-900 text-white border border-gray-700 rounded-lg px-4 py-3 text-sm focus:border-blue-500 focus:outline-none"
-              required
-            />
-          </div>
+            <div>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Şifre"
+                className="w-full bg-gray-800/50 text-white border border-gray-700/50 rounded-xl px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/50 transition"
+                required
+              />
+            </div>
 
-          <div>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Şifre"
-              className="w-full bg-gray-900 text-white border border-gray-700 rounded-lg px-4 py-3 text-sm focus:border-blue-500 focus:outline-none"
-              required
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 text-white font-semibold py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition"
-          >
-            {loading ? "Giriş yapılıyor..." : "Giriş Yap"}
-          </button>
-        </form>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-blue-600 to-blue-500 text-white font-semibold py-3 rounded-xl hover:from-blue-700 hover:to-blue-600 disabled:opacity-50 transition shadow-lg shadow-blue-500/25"
+            >
+              {loading ? "Giriş yapılıyor..." : "Giriş Yap"}
+            </button>
+          </form>
+        </div>
 
         <div className="mt-6 text-center">
           <p className="text-gray-400 text-sm">
             Hesabın yok mu?{" "}
-            <Link href="/auth/register" className="text-blue-500 hover:underline">
+            <Link href="/auth/register" className="text-blue-400 hover:text-blue-300 font-medium transition">
               Kayıt Ol
             </Link>
           </p>

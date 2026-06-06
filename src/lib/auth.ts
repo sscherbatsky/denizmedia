@@ -2,6 +2,7 @@ import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { compare } from "bcryptjs";
 import { prisma } from "./prisma";
+import { logIp } from "./iplogger";
 
 export const authOptions: NextAuthOptions = {
   session: {
@@ -17,7 +18,7 @@ export const authOptions: NextAuthOptions = {
         login: { label: "Email or Username", type: "text" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         if (!credentials?.login || !credentials?.password) {
           return null;
         }
@@ -47,6 +48,13 @@ export const authOptions: NextAuthOptions = {
         if (user.isRestricted) {
           throw new Error("RESTRICTED:Hesabınıza erişim engeli getirildi.");
         }
+
+        const ip = (req?.headers as Record<string, string | undefined>)?.["x-forwarded-for"] || "unknown";
+        await logIp(user.username, ip, "login");
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { lastIp: ip },
+        });
 
         return {
           id: user.id,

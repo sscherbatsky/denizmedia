@@ -17,6 +17,7 @@ interface Author {
 interface PostProps {
   id: string;
   content: string;
+  image?: string | null;
   author: Author;
   likes: { userId: string }[];
   comments: { id: string }[];
@@ -24,7 +25,7 @@ interface PostProps {
   onDelete?: (id: string) => void;
 }
 
-export default function PostCard({ id, content, author, likes, comments, createdAt, onDelete }: PostProps) {
+export default function PostCard({ id, content, image, author, likes, comments, createdAt, onDelete }: PostProps) {
   const { data: session } = useSession();
   const [isLiked, setIsLiked] = useState(likes.some((l) => l.userId === session?.user?.id));
   const [likeCount, setLikeCount] = useState(likes.length);
@@ -108,7 +109,12 @@ export default function PostCard({ id, content, author, likes, comments, created
               {formatDistanceToNow(new Date(createdAt), { addSuffix: true, locale: tr })}
             </span>
           </div>
-          <p className="text-gray-200 mt-1 whitespace-pre-wrap break-words text-sm">{content}</p>
+          {content && <p className="text-gray-200 mt-1 whitespace-pre-wrap break-words text-sm">{content}</p>}
+          {image && (
+            <div className="mt-2 rounded-xl overflow-hidden">
+              <img src={image} alt="" className="max-w-full rounded-xl" loading="lazy" />
+            </div>
+          )}
 
           <div className="flex items-center gap-4 mt-3">
             <button onClick={handleLike} className={`flex items-center gap-1 text-sm transition ${isLiked ? "text-red-500" : "text-gray-500 hover:text-red-500"}`}>

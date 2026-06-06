@@ -10,6 +10,7 @@ import PostForm from "@/components/PostForm";
 interface Post {
   id: string;
   content: string;
+  image?: string | null;
   createdAt: string;
   author: {
     id: string;
@@ -46,10 +47,6 @@ export default function FeedPage() {
     }
   }, [status, router, fetchPosts]);
 
-  const handleNewPost = (post: Record<string, unknown>) => {
-    setPosts((prev) => [post as unknown as Post, ...prev]);
-  };
-
   const handleDelete = (id: string) => {
     setPosts((prev) => prev.filter((p) => p.id !== id));
   };
@@ -57,7 +54,7 @@ export default function FeedPage() {
   if (status === "loading" || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-gray-400">Yükleniyor...</div>
+        <div className="text-gray-400 animate-pulse">Yükleniyor...</div>
       </div>
     );
   }
@@ -67,8 +64,8 @@ export default function FeedPage() {
   return (
     <div className="min-h-screen">
       <Navbar />
-      <main className="max-w-2xl mx-auto px-4 pt-20 pb-8">
-        <PostForm onPost={handleNewPost} />
+      <main className="max-w-2xl mx-auto px-4 py-6">
+        <PostForm onPostCreated={fetchPosts} />
         <div className="mt-4 space-y-3">
           {posts.length === 0 ? (
             <div className="text-center py-12 text-gray-500">

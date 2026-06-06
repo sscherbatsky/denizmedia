@@ -19,3 +19,70 @@ body {
   background: #333;
   border-radius: 3px;
 }
+
+/* Animated background for login/register pages */
+.wave-bg {
+  position: absolute;
+  inset: 0;
+  opacity: 0.15;
+  background: 
+    radial-gradient(ellipse 600px 400px at 20% 50%, rgba(59, 130, 246, 0.3), transparent),
+    radial-gradient(ellipse 400px 300px at 80% 20%, rgba(59, 130, 246, 0.2), transparent),
+    radial-gradient(ellipse 500px 350px at 60% 80%, rgba(99, 102, 241, 0.2), transparent);
+  animation: wavePulse 8s ease-in-out infinite alternate;
+}
+
+.floating-circles {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.floating-circles::before,
+.floating-circles::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.06;
+  animation: floatBubble 15s ease-in-out infinite;
+}
+
+.floating-circles::before {
+  width: 300px;
+  height: 300px;
+  background: linear-gradient(135deg, #3b82f6, #6366f1);
+  top: -100px;
+  left: -100px;
+  animation-delay: 0s;
+}
+
+.floating-circles::after {
+  width: 250px;
+  height: 250px;
+  background: linear-gradient(135deg, #6366f1, #3b82f6);
+  bottom: -80px;
+  right: -80px;
+  animation-delay: -7s;
+}
+
+@keyframes wavePulse {
+  0% { transform: scale(1) rotate(0deg); opacity: 0.15; }
+  50% { opacity: 0.25; }
+  100% { transform: scale(1.05) rotate(2deg); opacity: 0.15; }
+}
+
+@keyframes floatBubble {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(50px, 30px) scale(1.1); }
+  50% { transform: translate(20px, -20px) scale(0.95); }
+  75% { transform: translate(-30px, 40px) scale(1.05); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
+}

@@ -31,12 +31,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Giriş yapmanız gerekiyor." }, { status: 401 });
   }
 
-  const { content } = await req.json();
-  if (!content || content.trim().length === 0) {
-    return NextResponse.json({ error: "Gönderi içeriği boş olamaz." }, { status: 400 });
+  const { content, image } = await req.json();
+  if ((!content || content.trim().length === 0) && !image) {
+    return NextResponse.json({ error: "Gönderi içeriği veya fotoğraf gerekli." }, { status: 400 });
   }
 
-  if (content.length > 500) {
+  if (content && content.length > 500) {
     return NextResponse.json({ error: "Gönderi en fazla 500 karakter olabilir." }, { status: 400 });
   }
 
@@ -50,7 +50,7 @@ export async function POST(req: Request) {
   }
 
   const post = await prisma.post.create({
-    data: { content: content.trim(), authorId: session.user.id },
+    data: { content: (content || "").trim(), image: image || null, authorId: session.user.id },
     include: {
       author: {
         select: { id: true, username: true, displayName: true, profileImage: true, isVerified: true },

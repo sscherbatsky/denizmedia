@@ -33,6 +33,8 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [message, setMessage] = useState("");
+  const [modal, setModal] = useState<{ type: string; userId: string } | null>(null);
+  const [modalInput, setModalInput] = useState("");
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -40,79 +42,138 @@ export default function AdminPage() {
       return;
     }
     if (status === "authenticated") {
-      Promise.all([
-        fetch("/api/admin?action=users").then((r) => r.json()),
-        fetch("/api/admin?action=stats").then((r) => r.json()),
-      ]).then(([usersData, statsData]) => {
-        if (usersData.error) {
-          router.push("/feed");
-          return;
-        }
-        setUsers(usersData);
-        setStats(statsData);
-        setLoading(false);
-      });
+      loadData();
     }
   }, [status, router]);
+
+  const loadData = async () => {
+    try {
+      const [usersRes, statsRes] = await Promise.all([
+        fetch("/api/admin?action=users"),
+        fetch("/api/admin?action=stats"),
+      ]);
+      const usersData = await usersRes.json();
+      const statsData = await statsRes.json();
+      if (usersData.error) {
+        router.push("/feed");
+        return;
+      }
+      setUsers(usersData);
+      setStats(statsData);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const doAction = async (action: string, userId: string, extra?: Record<string, string>) => {
     setActionLoading(userId + action);
     setMessage("");
 
-    const res = await fetch("/api/admin", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action, userId, ...extra }),
-    });
+    try {
+      const res = await fetch("/api/admin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, userId, ...extra }),
+      });
 
-    const data = await res.json();
-    setMessage(data.message || data.error);
-    setActionLoading(null);
+      const data = await res.json();
+      setMessage(data.message || data.error);
 
-    const usersRes = await fetch("/api/admin?action=users");
-    const updatedUsers = await usersRes.json();
-    if (!updatedUsers.error) setUsers(updatedUsers);
+      const usersRes = await fetch("/api/admin?action=users");
+      const updatedUsers = await usersRes.json();
+      if (!updatedUsers.error) setUsers(updatedUsers);
+
+      const statsRes = await fetch("/api/admin?action=stats");
+      const updatedStats = await statsRes.json();
+      if (!updatedStats.error) setStats(updatedStats);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleModalSubmit = () => {
+    if (!modal) return;
+    if (modal.type === "ban") {
+      doAction("ban", modal.userId, { reason: modalInput || "Kural ihlali" });
+    } else if (modal.type === "timeout") {
+      doAction("timeout", modal.userId, { duration: modalInput || "24" });
+    }
+    setModal(null);
+    setModalInput("");
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-gray-400">Yükleniyor...</div>
+      <div className="min-h-screen flex items-center justify-center bg-black">
+        <div className="text-gray-400 animate-pulse">Yükleniyor...</div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-black">
+      {/* Modal */}
+      {modal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 w-full max-w-sm mx-4">
+            <h3 className="text-white font-semibold mb-4">
+              {modal.type === "ban" ? "Kullanıcıyı Banla" : "Timeout Uygula"}
+            </h3>
+            <input
+              type={modal.type === "timeout" ? "number" : "text"}
+              value={modalInput}
+              onChange={(e) => setModalInput(e.target.value)}
+              placeholder={modal.type === "ban" ? "Ban sebebi (opsiyonel)" : "Kaç saat? (varsayılan: 24)"}
+              className="w-full bg-gray-800 text-white border border-gray-700 rounded-xl px-4 py-3 text-sm focus:border-blue-500 focus:outline-none mb-4"
+              autoFocus
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={() => { setModal(null); setModalInput(""); }}
+                className="flex-1 bg-gray-800 text-gray-300 py-2.5 rounded-xl text-sm hover:bg-gray-700 transition"
+              >
+                İptal
+              </button>
+              <button
+                onClick={handleModalSubmit}
+                className="flex-1 bg-red-600 text-white py-2.5 rounded-xl text-sm hover:bg-red-700 transition font-medium"
+              >
+                Onayla
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-2xl font-bold text-white">
-            Admin <span className="text-red-500">Panel</span>
+          <h1 className="text-2xl font-bold">
+            <span className="text-white">Admin</span> <span className="text-red-500">Panel</span>
           </h1>
-          <button onClick={() => router.push("/feed")} className="text-gray-400 hover:text-white text-sm">
-            Ana Sayfa
+          <button onClick={() => router.push("/feed")} className="text-gray-400 hover:text-white text-sm transition">
+            ← Ana Sayfa
           </button>
         </div>
 
         {message && (
-          <div className="bg-blue-900/50 border border-blue-800 text-blue-300 text-sm rounded-lg p-3 mb-4">
+          <div className="bg-blue-900/30 border border-blue-800/50 text-blue-300 text-sm rounded-xl p-3 mb-6 animate-fadeIn">
             {message}
           </div>
         )}
 
         {stats && (
           <div className="grid grid-cols-3 gap-4 mb-8">
-            <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 text-center">
-              <p className="text-2xl font-bold text-white">{stats.userCount}</p>
-              <p className="text-gray-400 text-sm">Kullanıcı</p>
+            <div className="bg-gray-900/50 border border-gray-800/50 rounded-2xl p-5 text-center">
+              <p className="text-3xl font-bold text-white">{stats.userCount}</p>
+              <p className="text-gray-400 text-sm mt-1">Kullanıcı</p>
             </div>
-            <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 text-center">
-              <p className="text-2xl font-bold text-white">{stats.postCount}</p>
-              <p className="text-gray-400 text-sm">Gönderi</p>
+            <div className="bg-gray-900/50 border border-gray-800/50 rounded-2xl p-5 text-center">
+              <p className="text-3xl font-bold text-white">{stats.postCount}</p>
+              <p className="text-gray-400 text-sm mt-1">Gönderi</p>
             </div>
-            <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 text-center">
-              <p className="text-2xl font-bold text-white">{stats.commentCount}</p>
-              <p className="text-gray-400 text-sm">Yorum</p>
+            <div className="bg-gray-900/50 border border-gray-800/50 rounded-2xl p-5 text-center">
+              <p className="text-3xl font-bold text-white">{stats.commentCount}</p>
+              <p className="text-gray-400 text-sm mt-1">Yorum</p>
             </div>
           </div>
         )}
@@ -120,7 +181,7 @@ export default function AdminPage() {
         <h2 className="text-lg font-semibold text-white mb-4">Kullanıcılar</h2>
         <div className="space-y-3">
           {users.map((user) => (
-            <div key={user.id} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+            <div key={user.id} className="bg-gray-900/50 border border-gray-800/50 rounded-2xl p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-sm font-bold text-white overflow-hidden">
@@ -131,17 +192,17 @@ export default function AdminPage() {
                     )}
                   </div>
                   <div>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="font-semibold text-white text-sm">{user.displayName || user.username}</span>
                       {user.isVerified && (
                         <svg className="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
                         </svg>
                       )}
-                      {user.isBanned && <span className="text-xs bg-red-900 text-red-300 px-2 py-0.5 rounded">BANLI</span>}
-                      {user.isRestricted && <span className="text-xs bg-yellow-900 text-yellow-300 px-2 py-0.5 rounded">KISITLI</span>}
+                      {user.isBanned && <span className="text-xs bg-red-900/50 text-red-300 px-2 py-0.5 rounded-full">BANLI</span>}
+                      {user.isRestricted && <span className="text-xs bg-yellow-900/50 text-yellow-300 px-2 py-0.5 rounded-full">KISITLI</span>}
                       {user.timeoutUntil && new Date(user.timeoutUntil) > new Date() && (
-                        <span className="text-xs bg-orange-900 text-orange-300 px-2 py-0.5 rounded">TIMEOUT</span>
+                        <span className="text-xs bg-orange-900/50 text-orange-300 px-2 py-0.5 rounded-full">TIMEOUT</span>
                       )}
                     </div>
                     <p className="text-gray-500 text-xs">@{user.username} · {user.email}</p>
@@ -152,81 +213,75 @@ export default function AdminPage() {
 
               <div className="flex flex-wrap gap-2">
                 {user.isBanned ? (
-                  <button
+                  <ActionBtn
                     onClick={() => doAction("unban", user.id)}
-                    disabled={actionLoading === user.id + "unban"}
-                    className="bg-green-900/50 text-green-300 text-xs px-3 py-1.5 rounded-lg hover:bg-green-900 transition"
+                    loading={actionLoading === user.id + "unban"}
+                    color="green"
                   >
                     Ban Kaldır
-                  </button>
+                  </ActionBtn>
                 ) : (
-                  <button
-                    onClick={() => {
-                      const reason = prompt("Ban sebebi (opsiyonel):");
-                      doAction("ban", user.id, { reason: reason || "" });
-                    }}
-                    disabled={actionLoading === user.id + "ban"}
-                    className="bg-red-900/50 text-red-300 text-xs px-3 py-1.5 rounded-lg hover:bg-red-900 transition"
+                  <ActionBtn
+                    onClick={() => { setModal({ type: "ban", userId: user.id }); setModalInput(""); }}
+                    loading={actionLoading === user.id + "ban"}
+                    color="red"
                   >
                     Banla
-                  </button>
+                  </ActionBtn>
                 )}
 
                 {user.isVerified ? (
-                  <button
+                  <ActionBtn
                     onClick={() => doAction("unverify", user.id)}
-                    disabled={actionLoading === user.id + "unverify"}
-                    className="bg-gray-800 text-gray-300 text-xs px-3 py-1.5 rounded-lg hover:bg-gray-700 transition"
+                    loading={actionLoading === user.id + "unverify"}
+                    color="gray"
                   >
                     Tik Kaldır
-                  </button>
+                  </ActionBtn>
                 ) : (
-                  <button
+                  <ActionBtn
                     onClick={() => doAction("verify", user.id)}
-                    disabled={actionLoading === user.id + "verify"}
-                    className="bg-blue-900/50 text-blue-300 text-xs px-3 py-1.5 rounded-lg hover:bg-blue-900 transition"
+                    loading={actionLoading === user.id + "verify"}
+                    color="blue"
                   >
                     Mavi Tik Ver
-                  </button>
+                  </ActionBtn>
                 )}
 
-                <button
-                  onClick={() => {
-                    const hours = prompt("Kaç saat timeout? (varsayılan: 24)");
-                    doAction("timeout", user.id, { duration: hours || "24" });
-                  }}
-                  disabled={actionLoading === user.id + "timeout"}
-                  className="bg-orange-900/50 text-orange-300 text-xs px-3 py-1.5 rounded-lg hover:bg-orange-900 transition"
+                <ActionBtn
+                  onClick={() => { setModal({ type: "timeout", userId: user.id }); setModalInput(""); }}
+                  loading={actionLoading === user.id + "timeout"}
+                  color="orange"
                 >
                   Timeout
-                </button>
+                </ActionBtn>
 
                 {user.timeoutUntil && new Date(user.timeoutUntil) > new Date() && (
-                  <button
+                  <ActionBtn
                     onClick={() => doAction("remove_timeout", user.id)}
-                    disabled={actionLoading === user.id + "remove_timeout"}
-                    className="bg-gray-800 text-gray-300 text-xs px-3 py-1.5 rounded-lg hover:bg-gray-700 transition"
+                    loading={actionLoading === user.id + "remove_timeout"}
+                    color="gray"
                   >
                     Timeout Kaldır
-                  </button>
+                  </ActionBtn>
                 )}
 
                 {user.isRestricted ? (
-                  <button
+                  <ActionBtn
                     onClick={() => doAction("unrestrict", user.id)}
-                    disabled={actionLoading === user.id + "unrestrict"}
-                    className="bg-green-900/50 text-green-300 text-xs px-3 py-1.5 rounded-lg hover:bg-green-900 transition"
+                    loading={actionLoading === user.id + "unrestrict"}
+                    color="green"
                   >
                     Engel Kaldır
-                  </button>
+                  </ActionBtn>
                 ) : (
-                  <button
+                  <ActionBtn
                     onClick={() => doAction("restrict", user.id)}
-                    disabled={actionLoading === user.id + "restrict"}
-                    className="bg-yellow-900/50 text-yellow-300 text-xs px-3 py-1.5 rounded-lg hover:bg-yellow-900 transition"
+                    loading={actionLoading === user.id + "restrict"}
+                    color="yellow"
                   >
                     Erişim Engelle
-                  </button>
+                  </ActionBtn>
                 )}
               </div>
             </div>
@@ -240,5 +295,31 @@ export default function AdminPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function ActionBtn({ onClick, loading, color, children }: {
+  onClick: () => void;
+  loading: boolean;
+  color: string;
+  children: React.ReactNode;
+}) {
+  const colors: Record<string, string> = {
+    red: "bg-red-900/30 text-red-300 hover:bg-red-900/60 border-red-800/30",
+    green: "bg-green-900/30 text-green-300 hover:bg-green-900/60 border-green-800/30",
+    blue: "bg-blue-900/30 text-blue-300 hover:bg-blue-900/60 border-blue-800/30",
+    orange: "bg-orange-900/30 text-orange-300 hover:bg-orange-900/60 border-orange-800/30",
+    yellow: "bg-yellow-900/30 text-yellow-300 hover:bg-yellow-900/60 border-yellow-800/30",
+    gray: "bg-gray-800/50 text-gray-300 hover:bg-gray-700/50 border-gray-700/30",
+  };
+
+  return (
+    <button
+      onClick={onClick}
+      disabled={loading}
+      className={`${colors[color] || colors.gray} border text-xs px-3 py-1.5 rounded-lg transition disabled:opacity-50`}
+    >
+      {loading ? "..." : children}
+    </button>
   );
 }

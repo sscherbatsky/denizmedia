@@ -21,6 +21,8 @@ model User {
   banReason     String?
   timeoutUntil  DateTime?
   isRestricted  Boolean   @default(false)
+  emailVerified Boolean   @default(false)
+  lastIp        String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -33,9 +35,20 @@ model User {
   conversations ConversationParticipant[]
 }
 
+model VerificationCode {
+  id        String   @id @default(cuid())
+  email     String
+  code      String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}
+
 model Post {
   id        String   @id @default(cuid())
   content   String
+  image     String?
   authorId  String
   author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())

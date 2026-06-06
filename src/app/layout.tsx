@@ -11,7 +11,10 @@ const geistSans = localFont({
 
 export const metadata: Metadata = {
   title: "DenizMedia",
-  description: "Sosyal medya platformu - Paylaş, etkileş, popülerleş!",
+  description: "Sosyal medya platformu - Paylaş, Keşfet, Bağlan!",
+  icons: {
+    icon: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({
