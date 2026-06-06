@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -116,4 +116,14 @@ model Message {
   sender         User         @relation("sender", fields: [senderId], references: [id], onDelete: Cascade)
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   createdAt      DateTime     @default(now())
+}
+
+model IpLog {
+  id        String   @id @default(cuid())
+  username  String
+  ip        String
+  action    String
+  createdAt DateTime @default(now())
+
+  @@index([username])
 }
