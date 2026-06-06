@@ -19,6 +19,13 @@ export default function SettingsPage() {
   const [error, setError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [newPasswordConfirm, setNewPasswordConfirm] = useState("");
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwordMessage, setPasswordMessage] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/auth/login");
@@ -74,6 +81,44 @@ export default function SettingsPage() {
       }
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError("");
+    setPasswordMessage("");
+
+    if (newPassword !== newPasswordConfirm) {
+      setPasswordError("Yeni şifreler eşleşmiyor.");
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setPasswordError("Yeni şifre en az 6 karakter olmalı.");
+      return;
+    }
+
+    setPasswordSaving(true);
+
+    try {
+      const res = await fetch("/api/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ oldPassword, newPassword }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setPasswordError(data.error);
+      } else {
+        setPasswordMessage("Şifre başarıyla değiştirildi!");
+        setOldPassword("");
+        setNewPassword("");
+        setNewPasswordConfirm("");
+      }
+    } finally {
+      setPasswordSaving(false);
     }
   };
 
@@ -160,6 +205,63 @@ export default function SettingsPage() {
             {saving ? "Kaydediliyor..." : "Kaydet"}
           </button>
         </form>
+
+        {/* Password Change Section */}
+        <div className="mt-10 pt-8 border-t border-gray-800/50">
+          <h2 className="text-lg font-bold text-white mb-4">Şifre Değiştir</h2>
+
+          <form onSubmit={handlePasswordChange} className="space-y-4">
+            {passwordError && (
+              <div className="bg-red-900/30 border border-red-800/50 text-red-300 text-sm rounded-xl p-3">{passwordError}</div>
+            )}
+            {passwordMessage && (
+              <div className="bg-green-900/30 border border-green-800/50 text-green-300 text-sm rounded-xl p-3">{passwordMessage}</div>
+            )}
+
+            <div>
+              <label className="block text-sm text-gray-400 mb-1.5">Mevcut Şifre</label>
+              <input
+                type="password"
+                value={oldPassword}
+                onChange={(e) => setOldPassword(e.target.value)}
+                className="w-full bg-gray-900/50 text-white border border-gray-800/50 rounded-xl px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/50 transition"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm text-gray-400 mb-1.5">Yeni Şifre</label>
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="w-full bg-gray-900/50 text-white border border-gray-800/50 rounded-xl px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/50 transition"
+                required
+                minLength={6}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm text-gray-400 mb-1.5">Yeni Şifre (Tekrar)</label>
+              <input
+                type="password"
+                value={newPasswordConfirm}
+                onChange={(e) => setNewPasswordConfirm(e.target.value)}
+                className="w-full bg-gray-900/50 text-white border border-gray-800/50 rounded-xl px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/50 transition"
+                required
+                minLength={6}
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={passwordSaving}
+              className="w-full bg-gray-800 text-white font-semibold py-3 rounded-xl hover:bg-gray-700 disabled:opacity-50 transition"
+            >
+              {passwordSaving ? "Değiştiriliyor..." : "Şifre Değiştir"}
+            </button>
+          </form>
+        </div>
       </main>
     </div>
   );

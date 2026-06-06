@@ -3,16 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 
 export default function RegisterPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [verificationCode, setVerificationCode] = useState("");
-  const [emailVerified, setEmailVerified] = useState(false);
-  const [verificationSent, setVerificationSent] = useState(false);
-  const [devCode, setDevCode] = useState("");
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [bio, setBio] = useState("");
@@ -21,56 +18,11 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const sendVerification = async () => {
-    setError("");
-    setLoading(true);
-    try {
-      const res = await fetch("/api/verify-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, action: "send" }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error);
-        return;
-      }
-      setVerificationSent(true);
-      if (data.devCode) setDevCode(data.devCode);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const verifyCode = async () => {
-    setError("");
-    setLoading(true);
-    try {
-      const res = await fetch("/api/verify-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, code: verificationCode, action: "verify" }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error);
-        return;
-      }
-      setEmailVerified(true);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleStep1 = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     if (password.length < 6) {
       setError("Şifre en az 6 karakter olmalı.");
-      return;
-    }
-    if (!emailVerified) {
-      setError("Lütfen önce email adresinizi doğrulayın.");
       return;
     }
     setStep(2);
@@ -162,65 +114,12 @@ export default function RegisterPage() {
                 <input
                   type="email"
                   value={email}
-                  onChange={(e) => { setEmail(e.target.value); setEmailVerified(false); setVerificationSent(false); }}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="Email adresi"
                   className="w-full bg-gray-800/50 text-white border border-gray-700/50 rounded-xl px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/50 transition"
                   required
                 />
               </div>
-
-              {!emailVerified && (
-                <div className="space-y-2">
-                  {!verificationSent ? (
-                    <button
-                      type="button"
-                      onClick={sendVerification}
-                      disabled={loading || !email}
-                      className="w-full bg-gray-700 text-white py-2.5 rounded-xl text-sm hover:bg-gray-600 disabled:opacity-50 transition"
-                    >
-                      {loading ? "Gönderiliyor..." : "Doğrulama Kodu Gönder"}
-                    </button>
-                  ) : (
-                    <>
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          value={verificationCode}
-                          onChange={(e) => setVerificationCode(e.target.value)}
-                          placeholder="6 haneli kod"
-                          maxLength={6}
-                          className="flex-1 bg-gray-800/50 text-white border border-gray-700/50 rounded-xl px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/50 transition text-center tracking-widest"
-                        />
-                        <button
-                          type="button"
-                          onClick={verifyCode}
-                          disabled={loading || verificationCode.length !== 6}
-                          className="bg-blue-600 text-white px-4 py-3 rounded-xl text-sm hover:bg-blue-700 disabled:opacity-50 transition"
-                        >
-                          Doğrula
-                        </button>
-                      </div>
-                      {devCode && (
-                        <p className="text-yellow-400 text-xs text-center">Geliştirme modu - Kod: {devCode}</p>
-                      )}
-                      <button
-                        type="button"
-                        onClick={sendVerification}
-                        disabled={loading}
-                        className="text-blue-400 text-xs hover:text-blue-300 transition"
-                      >
-                        Kodu tekrar gönder
-                      </button>
-                    </>
-                  )}
-                </div>
-              )}
-
-              {emailVerified && (
-                <div className="bg-green-900/30 border border-green-800/50 text-green-400 text-sm rounded-xl p-3 text-center">
-                  ✓ Email doğrulandı
-                </div>
-              )}
 
               <div>
                 <input
@@ -236,10 +135,39 @@ export default function RegisterPage() {
 
               <button
                 type="submit"
-                disabled={!emailVerified}
                 className="w-full bg-gradient-to-r from-blue-600 to-blue-500 text-white font-semibold py-3 rounded-xl hover:from-blue-700 hover:to-blue-600 disabled:opacity-50 transition shadow-lg shadow-blue-500/25"
               >
                 Devam Et
+              </button>
+
+              <div className="relative my-2">
+                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-700/50" /></div>
+                <div className="relative flex justify-center text-xs"><span className="bg-gray-900 px-3 text-gray-500">veya</span></div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => signIn("google", { callbackUrl: "/feed" })}
+                className="w-full flex items-center justify-center gap-3 bg-white text-gray-900 font-medium py-3 rounded-xl hover:bg-gray-100 transition"
+              >
+                <svg className="w-5 h-5" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                </svg>
+                Google ile Kayıt Ol
+              </button>
+
+              <button
+                type="button"
+                onClick={() => signIn("twitter", { callbackUrl: "/feed" })}
+                className="w-full flex items-center justify-center gap-3 bg-black text-white font-medium py-3 rounded-xl border border-gray-700 hover:bg-gray-900 transition"
+              >
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                </svg>
+                X ile Kayıt Ol
               </button>
             </form>
           ) : (
@@ -260,7 +188,7 @@ export default function RegisterPage() {
                     )}
                   </div>
                   <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
-                  <p className="text-gray-400 text-xs text-center mt-1">Fotoğraf Ekle</p>
+                  <p className="text-blue-400 text-xs text-center mt-1">Fotoğraf Ekle</p>
                 </label>
               </div>
 
@@ -268,12 +196,12 @@ export default function RegisterPage() {
                 <input
                   type="text"
                   value={username}
-                  onChange={(e) => setUsername(e.target.value.toLowerCase())}
+                  onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9._]/g, ""))}
                   placeholder="Kullanıcı adı"
                   className="w-full bg-gray-800/50 text-white border border-gray-700/50 rounded-xl px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/50 transition"
                   required
+                  maxLength={30}
                 />
-                <p className="text-gray-500 text-xs mt-1">Küçük harf, rakam, nokta ve alt çizgi kullanabilirsiniz</p>
               </div>
 
               <div>
@@ -283,6 +211,7 @@ export default function RegisterPage() {
                   onChange={(e) => setDisplayName(e.target.value)}
                   placeholder="Görünen isim (opsiyonel)"
                   className="w-full bg-gray-800/50 text-white border border-gray-700/50 rounded-xl px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/50 transition"
+                  maxLength={50}
                 />
               </div>
 
@@ -291,27 +220,27 @@ export default function RegisterPage() {
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
                   placeholder="Biyografi (opsiyonel)"
-                  rows={2}
                   className="w-full bg-gray-800/50 text-white border border-gray-700/50 rounded-xl px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/50 transition resize-none"
+                  maxLength={160}
+                  rows={2}
                 />
               </div>
 
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setStep(1)}
-                  className="flex-1 bg-gray-700 text-white py-3 rounded-xl text-sm hover:bg-gray-600 transition"
-                >
-                  Geri
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex-1 bg-gradient-to-r from-blue-600 to-blue-500 text-white font-semibold py-3 rounded-xl hover:from-blue-700 hover:to-blue-600 disabled:opacity-50 transition shadow-lg shadow-blue-500/25"
-                >
-                  {loading ? "Kaydediliyor..." : "Kayıt Ol"}
-                </button>
-              </div>
+              <button
+                type="submit"
+                disabled={loading || !username}
+                className="w-full bg-gradient-to-r from-blue-600 to-blue-500 text-white font-semibold py-3 rounded-xl hover:from-blue-700 hover:to-blue-600 disabled:opacity-50 transition shadow-lg shadow-blue-500/25"
+              >
+                {loading ? "Kayıt yapılıyor..." : "Kayıt Ol"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setStep(1)}
+                className="w-full text-gray-400 text-sm hover:text-white transition"
+              >
+                ← Geri Dön
+              </button>
             </form>
           )}
         </div>
