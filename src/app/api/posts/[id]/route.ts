@@ -1,0 +1,50 @@
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+
+export async function GET(_req: Request, { params }: { params: { id: string } }) {
+  const post = await prisma.post.findUnique({
+    where: { id: params.id },
+    include: {
+      author: {
+        select: { id: true, username: true, displayName: true, profileImage: true, isVerified: true },
+      },
+      likes: { select: { userId: true } },
+      comments: {
+        orderBy: { createdAt: "desc" },
+        include: {
+          author: {
+            select: { id: true, username: true, displayName: true, profileImage: true, isVerified: true },
+          },
+        },
+      },
+    },
+  });
+
+  if (!post) {
+    return NextResponse.json({ error: "Gönderi bulunamadı." }, { status: 404 });
+  }
+
+  return NextResponse.json(post);
+}
+
+export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Giriş yapmanız gerekiyor." }, { status: 401 });
+  }
+
+  const post = await prisma.post.findUnique({ where: { id: params.id } });
+  if (!post) {
+    return NextResponse.json({ error: "Gönderi bulunamadı." }, { status: 404 });
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: session.user.id } });
+  if (post.authorId !== session.user.id && !user?.isAdmin) {
+    return NextResponse.json({ error: "Bu gönderiyi silme yetkiniz yok." }, { status: 403 });
+  }
+
+  await prisma.post.delete({ where: { id: params.id } });
+  return NextResponse.json({ success: true });
+}
