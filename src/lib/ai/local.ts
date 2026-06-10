@@ -1,4 +1,3 @@
-import fetch from 'node-fetch';
 
 type GenOpts = {
   prompt: string;
