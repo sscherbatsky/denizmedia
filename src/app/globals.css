@@ -2,9 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8f9fa;
+  --bg-card: #ffffff;
+  --border-color: #e5e7eb;
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --text-muted: #9ca3af;
+}
+
 body {
-  background-color: #000;
-  color: #fff;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
 }
 
 ::-webkit-scrollbar {
@@ -12,11 +22,11 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #111;
+  background: #f1f1f1;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #333;
+  background: #c1c1c1;
   border-radius: 3px;
 }
 
@@ -85,4 +95,64 @@ body {
 
 .animate-fadeIn {
   animation: fadeIn 0.3s ease-out;
+}
+
+/* LED glow effect for logo */
+.logo-glow {
+  transition: all 0.3s ease;
+}
+
+.logo-glow:hover {
+  filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.6))
+          drop-shadow(0 0 20px rgba(59, 130, 246, 0.4))
+          drop-shadow(0 0 40px rgba(59, 130, 246, 0.2));
+}
+
+/* Page transition */
+.page-transition {
+  animation: pageSlide 0.3s ease-out;
+}
+
+@keyframes pageSlide {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Nav icon active indicator */
+.nav-active {
+  color: #3b82f6;
+  position: relative;
+}
+
+.nav-active::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #3b82f6;
+}
+
+/* Badge pulse */
+@keyframes badgePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+.badge-pulse {
+  animation: badgePulse 2s ease-in-out infinite;
+}
+
+/* Post animation */
+@keyframes postPop {
+  0% { transform: scale(0.95); opacity: 0; }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.post-appear {
+  animation: postPop 0.4s ease-out;
 }

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { createNotification } from "@/lib/notifications";
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
@@ -31,6 +32,9 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       },
     },
   });
+
+  const post = await prisma.post.findUnique({ where: { id: params.id }, select: { authorId: true } });
+  if (post) await createNotification(post.authorId, session.user.id, "comment", params.id);
 
   return NextResponse.json(comment, { status: 201 });
 }

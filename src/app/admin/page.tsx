@@ -104,19 +104,19 @@ export default function AdminPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-black">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-gray-400 animate-pulse">Yükleniyor...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-gray-50">
       {/* Modal */}
       {modal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 w-full max-w-sm mx-4">
-            <h3 className="text-white font-semibold mb-4">
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white border border-gray-200 rounded-2xl p-6 w-full max-w-sm mx-4 shadow-xl">
+            <h3 className="text-gray-900 font-semibold mb-4">
               {modal.type === "ban" ? "Kullanıcıyı Banla" : "Timeout Uygula"}
             </h3>
             <input
@@ -124,13 +124,13 @@ export default function AdminPage() {
               value={modalInput}
               onChange={(e) => setModalInput(e.target.value)}
               placeholder={modal.type === "ban" ? "Ban sebebi (opsiyonel)" : "Kaç saat? (varsayılan: 24)"}
-              className="w-full bg-gray-800 text-white border border-gray-700 rounded-xl px-4 py-3 text-sm focus:border-blue-500 focus:outline-none mb-4"
+              className="w-full bg-gray-50 text-gray-900 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:border-blue-400 focus:outline-none mb-4"
               autoFocus
             />
             <div className="flex gap-2">
               <button
                 onClick={() => { setModal(null); setModalInput(""); }}
-                className="flex-1 bg-gray-800 text-gray-300 py-2.5 rounded-xl text-sm hover:bg-gray-700 transition"
+                className="flex-1 bg-gray-100 text-gray-600 py-2.5 rounded-xl text-sm hover:bg-gray-200 transition"
               >
                 İptal
               </button>
@@ -148,43 +148,43 @@ export default function AdminPage() {
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-2xl font-bold">
-            <span className="text-white">Admin</span> <span className="text-red-500">Panel</span>
+            <span className="text-gray-900">Admin</span> <span className="text-red-500">Panel</span>
           </h1>
-          <button onClick={() => router.push("/feed")} className="text-gray-400 hover:text-white text-sm transition">
+          <button onClick={() => router.push("/feed")} className="text-gray-400 hover:text-gray-900 text-sm transition">
             ← Ana Sayfa
           </button>
         </div>
 
         {message && (
-          <div className="bg-blue-900/30 border border-blue-800/50 text-blue-300 text-sm rounded-xl p-3 mb-6 animate-fadeIn">
+          <div className="bg-blue-50 border border-blue-200 text-blue-600 text-sm rounded-xl p-3 mb-6 animate-fadeIn">
             {message}
           </div>
         )}
 
         {stats && (
           <div className="grid grid-cols-3 gap-4 mb-8">
-            <div className="bg-gray-900/50 border border-gray-800/50 rounded-2xl p-5 text-center">
-              <p className="text-3xl font-bold text-white">{stats.userCount}</p>
+            <div className="bg-white border border-gray-200 rounded-2xl p-5 text-center shadow-sm">
+              <p className="text-3xl font-bold text-gray-900">{stats.userCount}</p>
               <p className="text-gray-400 text-sm mt-1">Kullanıcı</p>
             </div>
-            <div className="bg-gray-900/50 border border-gray-800/50 rounded-2xl p-5 text-center">
-              <p className="text-3xl font-bold text-white">{stats.postCount}</p>
+            <div className="bg-white border border-gray-200 rounded-2xl p-5 text-center shadow-sm">
+              <p className="text-3xl font-bold text-gray-900">{stats.postCount}</p>
               <p className="text-gray-400 text-sm mt-1">Gönderi</p>
             </div>
-            <div className="bg-gray-900/50 border border-gray-800/50 rounded-2xl p-5 text-center">
-              <p className="text-3xl font-bold text-white">{stats.commentCount}</p>
+            <div className="bg-white border border-gray-200 rounded-2xl p-5 text-center shadow-sm">
+              <p className="text-3xl font-bold text-gray-900">{stats.commentCount}</p>
               <p className="text-gray-400 text-sm mt-1">Yorum</p>
             </div>
           </div>
         )}
 
-        <h2 className="text-lg font-semibold text-white mb-4">Kullanıcılar</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Kullanıcılar</h2>
         <div className="space-y-3">
           {users.map((user) => (
-            <div key={user.id} className="bg-gray-900/50 border border-gray-800/50 rounded-2xl p-4">
+            <div key={user.id} className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-sm font-bold text-white overflow-hidden">
+                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-sm font-bold text-blue-600 overflow-hidden">
                     {user.profileImage ? (
                       <img src={user.profileImage} alt="" className="w-full h-full object-cover" />
                     ) : (
@@ -193,16 +193,16 @@ export default function AdminPage() {
                   </div>
                   <div>
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="font-semibold text-white text-sm">{user.displayName || user.username}</span>
+                      <span className="font-semibold text-gray-900 text-sm">{user.displayName || user.username}</span>
                       {user.isVerified && (
                         <svg className="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
                         </svg>
                       )}
-                      {user.isBanned && <span className="text-xs bg-red-900/50 text-red-300 px-2 py-0.5 rounded-full">BANLI</span>}
-                      {user.isRestricted && <span className="text-xs bg-yellow-900/50 text-yellow-300 px-2 py-0.5 rounded-full">KISITLI</span>}
+                      {user.isBanned && <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">BANLI</span>}
+                      {user.isRestricted && <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">KISITLI</span>}
                       {user.timeoutUntil && new Date(user.timeoutUntil) > new Date() && (
-                        <span className="text-xs bg-orange-900/50 text-orange-300 px-2 py-0.5 rounded-full">TIMEOUT</span>
+                        <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">TIMEOUT</span>
                       )}
                     </div>
                     <p className="text-gray-500 text-xs">@{user.username} · {user.email}</p>
@@ -305,12 +305,12 @@ function ActionBtn({ onClick, loading, color, children }: {
   children: React.ReactNode;
 }) {
   const colors: Record<string, string> = {
-    red: "bg-red-900/30 text-red-300 hover:bg-red-900/60 border-red-800/30",
-    green: "bg-green-900/30 text-green-300 hover:bg-green-900/60 border-green-800/30",
-    blue: "bg-blue-900/30 text-blue-300 hover:bg-blue-900/60 border-blue-800/30",
-    orange: "bg-orange-900/30 text-orange-300 hover:bg-orange-900/60 border-orange-800/30",
-    yellow: "bg-yellow-900/30 text-yellow-300 hover:bg-yellow-900/60 border-yellow-800/30",
-    gray: "bg-gray-800/50 text-gray-300 hover:bg-gray-700/50 border-gray-700/30",
+    red: "bg-red-50 text-red-600 hover:bg-red-100 border-red-200",
+    green: "bg-green-50 text-green-600 hover:bg-green-100 border-green-200",
+    blue: "bg-blue-50 text-blue-600 hover:bg-blue-100 border-blue-200",
+    orange: "bg-orange-50 text-orange-600 hover:bg-orange-100 border-orange-200",
+    yellow: "bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-yellow-200",
+    gray: "bg-gray-50 text-gray-600 hover:bg-gray-100 border-gray-200",
   };
 
   return (

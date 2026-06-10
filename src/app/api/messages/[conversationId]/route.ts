@@ -61,7 +61,7 @@ export async function POST(req: Request, { params }: { params: { conversationId:
     return NextResponse.json({ error: "Bu sohbete erişiminiz yok." }, { status: 403 });
   }
 
-  const { content } = await req.json();
+  const { content, type, gifUrl, voiceUrl } = await req.json();
   if (!content || content.trim().length === 0) {
     return NextResponse.json({ error: "Mesaj boş olamaz." }, { status: 400 });
   }
@@ -69,6 +69,9 @@ export async function POST(req: Request, { params }: { params: { conversationId:
   const message = await prisma.message.create({
     data: {
       content: content.trim(),
+      type: type || "text",
+      gifUrl: gifUrl || null,
+      voiceUrl: voiceUrl || null,
       senderId: session.user.id,
       conversationId: params.conversationId,
     },

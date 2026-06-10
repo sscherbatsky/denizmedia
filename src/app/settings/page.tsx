@@ -124,29 +124,29 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-gray-400 animate-pulse">Yükleniyor...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gray-50">
       <Navbar />
-      <main className="max-w-lg mx-auto px-4 py-6">
-        <h1 className="text-xl font-bold text-white mb-6">Profil Ayarları</h1>
+      <main className="max-w-lg mx-auto px-4 py-6 page-transition">
+        <h1 className="text-xl font-bold text-gray-900 mb-6">Profil Ayarları</h1>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           {error && (
-            <div className="bg-red-900/30 border border-red-800/50 text-red-300 text-sm rounded-xl p-3">{error}</div>
+            <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl p-3">{error}</div>
           )}
           {message && (
-            <div className="bg-green-900/30 border border-green-800/50 text-green-300 text-sm rounded-xl p-3">{message}</div>
+            <div className="bg-green-50 border border-green-200 text-green-600 text-sm rounded-xl p-3">{message}</div>
           )}
 
           <div className="flex justify-center">
             <label className="cursor-pointer group">
-              <div className="w-24 h-24 rounded-full bg-gray-800/50 border-2 border-dashed border-gray-600 flex items-center justify-center overflow-hidden group-hover:border-blue-500 transition">
+              <div className="w-24 h-24 rounded-full bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden group-hover:border-blue-500 transition">
                 {profilePreview ? (
                   <img src={profilePreview} alt="Profil" className="w-full h-full object-cover" />
                 ) : (
@@ -160,38 +160,38 @@ export default function SettingsPage() {
                 onChange={handleFileChange}
                 className="hidden"
               />
-              <p className="text-blue-400 text-xs text-center mt-2 group-hover:text-blue-300 transition">Fotoğraf Değiştir</p>
+              <p className="text-blue-500 text-xs text-center mt-2 group-hover:text-blue-600 transition">Fotoğraf Değiştir</p>
             </label>
           </div>
 
           <div>
-            <label className="block text-sm text-gray-400 mb-1.5">Kullanıcı Adı</label>
+            <label className="block text-sm text-gray-500 mb-1.5">Kullanıcı Adı</label>
             <input
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9._]/g, ""))}
-              className="w-full bg-gray-900/50 text-white border border-gray-800/50 rounded-xl px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/50 transition"
+              className="w-full bg-white text-gray-900 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100 transition"
               maxLength={30}
             />
           </div>
 
           <div>
-            <label className="block text-sm text-gray-400 mb-1.5">Görünen İsim</label>
+            <label className="block text-sm text-gray-500 mb-1.5">Görünen İsim</label>
             <input
               type="text"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              className="w-full bg-gray-900/50 text-white border border-gray-800/50 rounded-xl px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/50 transition"
+              className="w-full bg-white text-gray-900 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100 transition"
               maxLength={50}
             />
           </div>
 
           <div>
-            <label className="block text-sm text-gray-400 mb-1.5">Biyografi</label>
+            <label className="block text-sm text-gray-500 mb-1.5">Biyografi</label>
             <textarea
               value={bio}
               onChange={(e) => setBio(e.target.value)}
-              className="w-full bg-gray-900/50 text-white border border-gray-800/50 rounded-xl px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/50 transition resize-none"
+              className="w-full bg-white text-gray-900 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100 transition resize-none"
               maxLength={160}
               rows={3}
             />
@@ -200,54 +200,54 @@ export default function SettingsPage() {
           <button
             type="submit"
             disabled={saving}
-            className="w-full bg-gradient-to-r from-blue-600 to-blue-500 text-white font-semibold py-3 rounded-xl hover:from-blue-700 hover:to-blue-600 disabled:opacity-50 transition shadow-lg shadow-blue-500/25"
+            className="w-full bg-blue-500 text-white font-semibold py-3 rounded-xl hover:bg-blue-600 disabled:opacity-50 transition shadow-sm"
           >
             {saving ? "Kaydediliyor..." : "Kaydet"}
           </button>
         </form>
 
         {/* Password Change Section */}
-        <div className="mt-10 pt-8 border-t border-gray-800/50">
-          <h2 className="text-lg font-bold text-white mb-4">Şifre Değiştir</h2>
+        <div className="mt-10 pt-8 border-t border-gray-200">
+          <h2 className="text-lg font-bold text-gray-900 mb-4">Şifre Değiştir</h2>
 
           <form onSubmit={handlePasswordChange} className="space-y-4">
             {passwordError && (
-              <div className="bg-red-900/30 border border-red-800/50 text-red-300 text-sm rounded-xl p-3">{passwordError}</div>
+              <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl p-3">{passwordError}</div>
             )}
             {passwordMessage && (
-              <div className="bg-green-900/30 border border-green-800/50 text-green-300 text-sm rounded-xl p-3">{passwordMessage}</div>
+              <div className="bg-green-50 border border-green-200 text-green-600 text-sm rounded-xl p-3">{passwordMessage}</div>
             )}
 
             <div>
-              <label className="block text-sm text-gray-400 mb-1.5">Mevcut Şifre</label>
+              <label className="block text-sm text-gray-500 mb-1.5">Mevcut Şifre</label>
               <input
                 type="password"
                 value={oldPassword}
                 onChange={(e) => setOldPassword(e.target.value)}
-                className="w-full bg-gray-900/50 text-white border border-gray-800/50 rounded-xl px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/50 transition"
+                className="w-full bg-white text-gray-900 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100 transition"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm text-gray-400 mb-1.5">Yeni Şifre</label>
+              <label className="block text-sm text-gray-500 mb-1.5">Yeni Şifre</label>
               <input
                 type="password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full bg-gray-900/50 text-white border border-gray-800/50 rounded-xl px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/50 transition"
+                className="w-full bg-white text-gray-900 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100 transition"
                 required
                 minLength={6}
               />
             </div>
 
             <div>
-              <label className="block text-sm text-gray-400 mb-1.5">Yeni Şifre (Tekrar)</label>
+              <label className="block text-sm text-gray-500 mb-1.5">Yeni Şifre (Tekrar)</label>
               <input
                 type="password"
                 value={newPasswordConfirm}
                 onChange={(e) => setNewPasswordConfirm(e.target.value)}
-                className="w-full bg-gray-900/50 text-white border border-gray-800/50 rounded-xl px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/50 transition"
+                className="w-full bg-white text-gray-900 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100 transition"
                 required
                 minLength={6}
               />
@@ -256,7 +256,7 @@ export default function SettingsPage() {
             <button
               type="submit"
               disabled={passwordSaving}
-              className="w-full bg-gray-800 text-white font-semibold py-3 rounded-xl hover:bg-gray-700 disabled:opacity-50 transition"
+              className="w-full bg-gray-700 text-white font-semibold py-3 rounded-xl hover:bg-gray-800 disabled:opacity-50 transition shadow-sm"
             >
               {passwordSaving ? "Değiştiriliyor..." : "Şifre Değiştir"}
             </button>

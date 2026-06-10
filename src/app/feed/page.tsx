@@ -53,7 +53,7 @@ export default function FeedPage() {
 
   if (status === "loading" || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-gray-400 animate-pulse">Yükleniyor...</div>
       </div>
     );
@@ -62,13 +62,16 @@ export default function FeedPage() {
   if (!session) return null;
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gray-50">
       <Navbar />
-      <main className="max-w-2xl mx-auto px-4 py-6">
+      <main className="max-w-2xl mx-auto px-4 py-6 page-transition">
         <PostForm onPostCreated={fetchPosts} />
         <div className="mt-4 space-y-3">
           {posts.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
+            <div className="text-center py-16 text-gray-400">
+              <svg className="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+              </svg>
               <p className="text-lg">Henüz gönderi yok</p>
               <p className="text-sm mt-1">İlk gönderiyi sen paylaş!</p>
             </div>
