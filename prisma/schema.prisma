@@ -25,14 +25,16 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  accounts      Account[]
-  posts         Post[]
-  likes         Like[]
-  comments      Comment[]
-  followers     Follow[]  @relation("following")
-  following     Follow[]  @relation("follower")
-  sentMessages  Message[] @relation("sender")
-  conversations ConversationParticipant[]
+  accounts          Account[]
+  posts             Post[]
+  likes             Like[]
+  comments          Comment[]
+  followers         Follow[]       @relation("following")
+  following         Follow[]       @relation("follower")
+  sentMessages      Message[]      @relation("sender")
+  conversations     ConversationParticipant[]
+  notifications     Notification[] @relation("notifications")
+  sentNotifications Notification[] @relation("sentNotifications")
 }
 
 model Account {
@@ -118,11 +120,28 @@ model ConversationParticipant {
 model Message {
   id             String       @id @default(cuid())
   content        String
+  type           String       @default("text")
+  voiceUrl       String?
+  gifUrl         String?
   senderId       String
   conversationId String
   sender         User         @relation("sender", fields: [senderId], references: [id], onDelete: Cascade)
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   createdAt      DateTime     @default(now())
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  fromId    String
+  type      String
+  postId    String?
+  read      Boolean  @default(false)
+  user      User     @relation("notifications", fields: [userId], references: [id], onDelete: Cascade)
+  from      User     @relation("sentNotifications", fields: [fromId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([userId, read])
 }
 
 model IpLog {

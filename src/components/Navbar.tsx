@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { useState, useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 
 interface SearchResult {
   id: string;
@@ -14,10 +15,13 @@ interface SearchResult {
 
 export default function Navbar() {
   const { data: session } = useSession();
+  const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [showResults, setShowResults] = useState(false);
+  const [notifCount, setNotifCount] = useState(0);
+  const [msgCount] = useState(0);
   const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -33,9 +37,9 @@ export default function Navbar() {
   useEffect(() => {
     if (!searchQuery.trim()) {
       setSearchResults([]);
+      setShowResults(false);
       return;
     }
-
     const timer = setTimeout(async () => {
       const res = await fetch(`/api/search?q=${encodeURIComponent(searchQuery)}`);
       if (res.ok) {
@@ -43,31 +47,48 @@ export default function Navbar() {
         setSearchResults(data);
         setShowResults(true);
       }
-    }, 300);
-
+    }, 200);
     return () => clearTimeout(timer);
   }, [searchQuery]);
+
+  useEffect(() => {
+    if (!session) return;
+    const fetchCounts = async () => {
+      const [notifRes] = await Promise.all([
+        fetch("/api/notifications/count"),
+      ]);
+      if (notifRes.ok) {
+        const data = await notifRes.json();
+        setNotifCount(data.count);
+      }
+    };
+    fetchCounts();
+    const interval = setInterval(fetchCounts, 15000);
+    return () => clearInterval(interval);
+  }, [session]);
 
   if (!session) return null;
 
   const username = (session.user as Record<string, unknown>)?.username as string;
+  const isActive = (path: string) => pathname === path || pathname.startsWith(path + "/");
 
   return (
-    <nav className="bg-gray-900/95 backdrop-blur-md border-b border-gray-800/50 sticky top-0 z-50">
-      <div className="max-w-4xl mx-auto px-4 py-3">
-        <div className="flex items-center justify-between gap-3">
-          <Link href="/feed" className="flex items-center gap-2.5 group flex-shrink-0">
-            <img src="/logo.png" alt="DenizMedia" className="w-8 h-8 object-contain" />
-            <span className="text-lg font-bold hidden sm:inline">
-              <span className="text-white group-hover:text-gray-200 transition">deniz</span>
-              <span className="text-blue-500 group-hover:text-blue-400 transition">media</span>
+    <nav className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+      <div className="max-w-4xl mx-auto px-4 py-2.5">
+        <div className="flex items-center justify-between gap-2">
+          {/* Logo with LED glow */}
+          <Link href="/feed" className="flex items-center gap-2 group flex-shrink-0 logo-glow">
+            <img src="/logo.png" alt="DenizMedia" className="w-9 h-9 object-contain transition-transform group-hover:scale-105" />
+            <span className="text-lg font-bold hidden md:inline">
+              <span className="text-gray-900">deniz</span>
+              <span className="text-blue-500">media</span>
             </span>
           </Link>
 
           {/* Search Bar */}
-          <div ref={searchRef} className="relative flex-1 max-w-xs">
+          <div ref={searchRef} className="relative flex-1 max-w-sm mx-2">
             <div className="relative">
-              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
               <input
@@ -76,36 +97,36 @@ export default function Navbar() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onFocus={() => searchResults.length > 0 && setShowResults(true)}
                 placeholder="Kullanıcı ara..."
-                className="w-full bg-gray-800/50 text-white border border-gray-700/50 rounded-xl pl-9 pr-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/50 transition placeholder-gray-500"
+                className="w-full bg-gray-100 text-gray-900 border border-gray-200 rounded-full pl-10 pr-4 py-2 text-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100 transition placeholder-gray-400"
               />
             </div>
 
             {showResults && searchResults.length > 0 && (
-              <div className="absolute top-full mt-1 w-full bg-gray-900 border border-gray-800 rounded-xl shadow-xl overflow-hidden z-50">
+              <div className="absolute top-full mt-2 w-full bg-white border border-gray-200 rounded-2xl shadow-lg overflow-hidden z-50">
                 {searchResults.map((user) => (
                   <Link
                     key={user.id}
                     href={`/profile/${user.username}`}
                     onClick={() => { setShowResults(false); setSearchQuery(""); }}
-                    className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-800/50 transition"
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition"
                   >
                     {user.profileImage ? (
-                      <img src={user.profileImage} alt="" className="w-8 h-8 rounded-full object-cover" />
+                      <img src={user.profileImage} alt="" className="w-9 h-9 rounded-full object-cover" />
                     ) : (
-                      <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-bold">
+                      <div className="w-9 h-9 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm font-bold">
                         {user.username[0].toUpperCase()}
                       </div>
                     )}
                     <div className="min-w-0">
                       <div className="flex items-center gap-1">
-                        <span className="text-white text-sm font-medium truncate">{user.displayName || user.username}</span>
+                        <span className="text-gray-900 text-sm font-medium truncate">{user.displayName || user.username}</span>
                         {user.isVerified && (
-                          <svg className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                          <svg className="w-4 h-4 text-blue-500 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
                           </svg>
                         )}
                       </div>
-                      <span className="text-gray-500 text-xs">@{user.username}</span>
+                      <span className="text-gray-400 text-xs">@{user.username}</span>
                     </div>
                   </Link>
                 ))}
@@ -113,28 +134,50 @@ export default function Navbar() {
             )}
 
             {showResults && searchQuery.trim() && searchResults.length === 0 && (
-              <div className="absolute top-full mt-1 w-full bg-gray-900 border border-gray-800 rounded-xl shadow-xl p-4 text-center z-50">
-                <span className="text-gray-500 text-sm">Kullanıcı bulunamadı</span>
+              <div className="absolute top-full mt-2 w-full bg-white border border-gray-200 rounded-2xl shadow-lg p-4 text-center z-50">
+                <span className="text-gray-400 text-sm">Kullanıcı bulunamadı</span>
               </div>
             )}
           </div>
 
+          {/* Icon Navigation */}
           <div className="hidden sm:flex items-center gap-1 flex-shrink-0">
-            <NavLink href="/feed">Ana Sayfa</NavLink>
-            <NavLink href="/messages">Mesajlar</NavLink>
-            <NavLink href={`/profile/${username}`}>Profil</NavLink>
-            <NavLink href="/settings">Ayarlar</NavLink>
+            <NavIcon href="/feed" active={isActive("/feed")} title="Ana Sayfa">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+            </NavIcon>
+
+            <NavIcon href="/messages" active={isActive("/messages")} title="Mesajlar" badge={msgCount} badgeColor="red">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </NavIcon>
+
+            <NavIcon href="/notifications" active={isActive("/notifications")} title="Bildirimler" badge={notifCount} badgeColor="red">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </NavIcon>
+
+            <NavIcon href={`/profile/${username}`} active={isActive(`/profile/${username}`)} title="Profil">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </NavIcon>
+
+            <NavIcon href="/settings" active={isActive("/settings")} title="Ayarlar">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </NavIcon>
+
             <button
               onClick={() => signOut({ callbackUrl: "/auth/login" })}
-              className="text-gray-400 hover:text-red-400 px-3 py-1.5 rounded-lg text-sm transition"
+              className="p-2.5 rounded-xl text-gray-400 hover:text-red-500 hover:bg-red-50 transition"
+              title="Çıkış"
             >
-              Çıkış
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
             </button>
           </div>
 
+          {/* Mobile menu */}
           <button
             onClick={() => setMenuOpen(!menuOpen)}
-            className="sm:hidden text-gray-300 hover:text-white p-2 rounded-lg transition flex-shrink-0"
+            className="sm:hidden text-gray-600 hover:text-gray-900 p-2 rounded-lg transition flex-shrink-0"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               {menuOpen ? (
@@ -147,16 +190,17 @@ export default function Navbar() {
         </div>
 
         {menuOpen && (
-          <div className="sm:hidden mt-3 pt-3 border-t border-gray-800/50 flex flex-col gap-1">
-            <MobileNavLink href="/feed" onClick={() => setMenuOpen(false)}>Ana Sayfa</MobileNavLink>
-            <MobileNavLink href="/messages" onClick={() => setMenuOpen(false)}>Mesajlar</MobileNavLink>
-            <MobileNavLink href={`/profile/${username}`} onClick={() => setMenuOpen(false)}>Profil</MobileNavLink>
-            <MobileNavLink href="/settings" onClick={() => setMenuOpen(false)}>Ayarlar</MobileNavLink>
+          <div className="sm:hidden mt-3 pt-3 border-t border-gray-100 flex flex-col gap-1">
+            <MobileNavLink href="/feed" onClick={() => setMenuOpen(false)} icon="🏠">Ana Sayfa</MobileNavLink>
+            <MobileNavLink href="/messages" onClick={() => setMenuOpen(false)} icon="💬" badge={msgCount}>Mesajlar</MobileNavLink>
+            <MobileNavLink href="/notifications" onClick={() => setMenuOpen(false)} icon="🔔" badge={notifCount}>Bildirimler</MobileNavLink>
+            <MobileNavLink href={`/profile/${username}`} onClick={() => setMenuOpen(false)} icon="👤">Profil</MobileNavLink>
+            <MobileNavLink href="/settings" onClick={() => setMenuOpen(false)} icon="⚙️">Ayarlar</MobileNavLink>
             <button
               onClick={() => { signOut({ callbackUrl: "/auth/login" }); setMenuOpen(false); }}
-              className="text-left text-red-400 hover:bg-red-900/20 px-3 py-2 rounded-lg text-sm transition"
+              className="text-left text-red-500 hover:bg-red-50 px-3 py-2.5 rounded-xl text-sm transition flex items-center gap-3"
             >
-              Çıkış Yap
+              <span>🚪</span> Çıkış Yap
             </button>
           </div>
         )}
@@ -165,18 +209,54 @@ export default function Navbar() {
   );
 }
 
-function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
+function NavIcon({ href, active, title, children, badge, badgeColor }: {
+  href: string;
+  active: boolean;
+  title: string;
+  children: React.ReactNode;
+  badge?: number;
+  badgeColor?: "red" | "purple";
+}) {
   return (
-    <Link href={href} className="text-gray-300 hover:text-white hover:bg-gray-800/50 px-3 py-1.5 rounded-lg text-sm transition">
-      {children}
+    <Link
+      href={href}
+      title={title}
+      className={`relative p-2.5 rounded-xl transition ${
+        active
+          ? "text-blue-500 bg-blue-50"
+          : "text-gray-500 hover:text-gray-900 hover:bg-gray-100"
+      }`}
+    >
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        {children}
+      </svg>
+      {badge !== undefined && badge > 0 && (
+        <span className={`absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center text-[10px] font-bold text-white rounded-full px-1 badge-pulse ${
+          badgeColor === "purple" ? "bg-purple-500" : "bg-red-500"
+        }`}>
+          {badge > 99 ? "99+" : badge}
+        </span>
+      )}
     </Link>
   );
 }
 
-function MobileNavLink({ href, children, onClick }: { href: string; children: React.ReactNode; onClick: () => void }) {
+function MobileNavLink({ href, children, onClick, icon, badge }: {
+  href: string;
+  children: React.ReactNode;
+  onClick: () => void;
+  icon: string;
+  badge?: number;
+}) {
   return (
-    <Link href={href} onClick={onClick} className="text-gray-300 hover:text-white hover:bg-gray-800/50 px-3 py-2 rounded-lg text-sm transition">
-      {children}
+    <Link href={href} onClick={onClick} className="text-gray-700 hover:text-gray-900 hover:bg-gray-50 px-3 py-2.5 rounded-xl text-sm transition flex items-center gap-3">
+      <span>{icon}</span>
+      <span className="flex-1">{children}</span>
+      {badge !== undefined && badge > 0 && (
+        <span className="bg-red-500 text-white text-[10px] font-bold min-w-[18px] h-[18px] flex items-center justify-center rounded-full px-1">
+          {badge}
+        </span>
+      )}
     </Link>
   );
 }

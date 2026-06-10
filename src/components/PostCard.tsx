@@ -80,10 +80,10 @@ export default function PostCard({ id, content, image, author, likes, comments, 
   };
 
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 hover:border-gray-700 transition">
+    <div className="bg-white border border-gray-200 rounded-2xl p-4 hover:shadow-md transition shadow-sm post-appear">
       <div className="flex items-start gap-3">
         <Link href={`/profile/${author.username}`}>
-          <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-sm font-bold text-white shrink-0 overflow-hidden">
+          <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-sm font-bold text-blue-600 shrink-0 overflow-hidden">
             {author.profileImage ? (
               <img src={author.profileImage} alt="" className="w-full h-full object-cover" />
             ) : (
@@ -93,7 +93,7 @@ export default function PostCard({ id, content, image, author, likes, comments, 
         </Link>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1 flex-wrap">
-            <Link href={`/profile/${author.username}`} className="font-semibold text-white hover:underline text-sm">
+            <Link href={`/profile/${author.username}`} className="font-semibold text-gray-900 hover:underline text-sm">
               {author.displayName || author.username}
             </Link>
             {author.isVerified && (
@@ -101,30 +101,30 @@ export default function PostCard({ id, content, image, author, likes, comments, 
                 <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
               </svg>
             )}
-            <Link href={`/profile/${author.username}`} className="text-gray-500 text-sm">
+            <Link href={`/profile/${author.username}`} className="text-gray-400 text-sm">
               @{author.username}
             </Link>
-            <span className="text-gray-600 text-sm">·</span>
-            <span className="text-gray-500 text-xs">
+            <span className="text-gray-300 text-sm">·</span>
+            <span className="text-gray-400 text-xs">
               {formatDistanceToNow(new Date(createdAt), { addSuffix: true, locale: tr })}
             </span>
           </div>
-          {content && <p className="text-gray-200 mt-1 whitespace-pre-wrap break-words text-sm">{content}</p>}
+          {content && <p className="text-gray-800 mt-1.5 whitespace-pre-wrap break-words text-sm leading-relaxed">{content}</p>}
           {image && (
             <div className="mt-2 rounded-xl overflow-hidden">
               <img src={image} alt="" className="max-w-full rounded-xl" loading="lazy" />
             </div>
           )}
 
-          <div className="flex items-center gap-4 mt-3">
-            <button onClick={handleLike} className={`flex items-center gap-1 text-sm transition ${isLiked ? "text-red-500" : "text-gray-500 hover:text-red-500"}`}>
+          <div className="flex items-center gap-5 mt-3">
+            <button onClick={handleLike} className={`flex items-center gap-1.5 text-sm transition ${isLiked ? "text-red-500" : "text-gray-400 hover:text-red-500"}`}>
               <svg className="w-5 h-5" fill={isLiked ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
               </svg>
               {likeCount > 0 && likeCount}
             </button>
 
-            <button onClick={loadComments} className="flex items-center gap-1 text-sm text-gray-500 hover:text-blue-500 transition">
+            <button onClick={loadComments} className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-blue-500 transition">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
               </svg>
@@ -132,7 +132,7 @@ export default function PostCard({ id, content, image, author, likes, comments, 
             </button>
 
             {(session?.user?.id === author.id) && (
-              <button onClick={handleDelete} className="text-gray-500 hover:text-red-500 text-sm transition ml-auto">
+              <button onClick={handleDelete} className="text-gray-300 hover:text-red-500 text-sm transition ml-auto">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
@@ -141,23 +141,23 @@ export default function PostCard({ id, content, image, author, likes, comments, 
           </div>
 
           {showComments && (
-            <div className="mt-3 border-t border-gray-800 pt-3">
+            <div className="mt-3 border-t border-gray-100 pt-3">
               <form onSubmit={handleComment} className="flex gap-2 mb-3">
                 <input
                   type="text"
                   value={commentText}
                   onChange={(e) => setCommentText(e.target.value)}
                   placeholder="Yorum yaz..."
-                  className="flex-1 bg-gray-800 text-white text-sm rounded-lg px-3 py-2 border border-gray-700 focus:border-blue-500 focus:outline-none"
+                  className="flex-1 bg-gray-50 text-gray-900 text-sm rounded-full px-4 py-2 border border-gray-200 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
                 />
-                <button type="submit" className="bg-blue-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-blue-700 transition">
+                <button type="submit" className="bg-blue-500 text-white text-sm px-4 py-2 rounded-full hover:bg-blue-600 transition">
                   Gönder
                 </button>
               </form>
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 {commentList.map((comment) => (
                   <div key={comment.id} className="flex items-start gap-2">
-                    <div className="w-6 h-6 rounded-full bg-gray-700 flex items-center justify-center text-xs font-bold text-white shrink-0 overflow-hidden">
+                    <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center text-xs font-bold text-blue-600 shrink-0 overflow-hidden">
                       {comment.author.profileImage ? (
                         <img src={comment.author.profileImage} alt="" className="w-full h-full object-cover" />
                       ) : (
@@ -165,13 +165,13 @@ export default function PostCard({ id, content, image, author, likes, comments, 
                       )}
                     </div>
                     <div>
-                      <span className="text-sm font-semibold text-white">{comment.author.displayName || comment.author.username}</span>
+                      <span className="text-sm font-semibold text-gray-900">{comment.author.displayName || comment.author.username}</span>
                       {comment.author.isVerified && (
                         <svg className="w-3 h-3 text-blue-500 inline ml-1" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
                         </svg>
                       )}
-                      <p className="text-gray-300 text-sm">{comment.content}</p>
+                      <p className="text-gray-600 text-sm">{comment.content}</p>
                     </div>
                   </div>
                 ))}

@@ -13,6 +13,14 @@ export default function PostForm({ onPostCreated }: PostFormProps) {
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const playPostSound = () => {
+    try {
+      const audio = new Audio("/sounds/post.wav");
+      audio.volume = 0.4;
+      audio.play().catch(() => {});
+    } catch {}
+  };
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -49,6 +57,7 @@ export default function PostForm({ onPostCreated }: PostFormProps) {
       });
 
       if (res.ok) {
+        playPostSound();
         setContent("");
         removeImage();
         onPostCreated();
@@ -59,7 +68,7 @@ export default function PostForm({ onPostCreated }: PostFormProps) {
   };
 
   return (
-    <div className="bg-gray-900/50 border border-gray-800/50 rounded-2xl p-4">
+    <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
       <form onSubmit={handleSubmit}>
         <textarea
           value={content}
@@ -67,7 +76,7 @@ export default function PostForm({ onPostCreated }: PostFormProps) {
           placeholder="Neler düşünüyorsun?"
           maxLength={500}
           rows={3}
-          className="w-full bg-transparent text-white border-none outline-none resize-none text-sm placeholder:text-gray-500"
+          className="w-full bg-transparent text-gray-900 border-none outline-none resize-none text-sm placeholder:text-gray-400"
         />
 
         {imagePreview && (
@@ -76,19 +85,19 @@ export default function PostForm({ onPostCreated }: PostFormProps) {
             <button
               type="button"
               onClick={removeImage}
-              className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 text-white w-7 h-7 rounded-full flex items-center justify-center text-sm transition"
+              className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white w-7 h-7 rounded-full flex items-center justify-center text-sm transition"
             >
               ✕
             </button>
           </div>
         )}
 
-        <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-800/30">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+          <div className="flex items-center gap-1">
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="text-gray-400 hover:text-blue-400 p-2 rounded-lg hover:bg-gray-800/50 transition"
+              className="text-gray-400 hover:text-blue-500 p-2 rounded-lg hover:bg-blue-50 transition"
               title="Fotoğraf Ekle"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -102,13 +111,13 @@ export default function PostForm({ onPostCreated }: PostFormProps) {
               onChange={handleImageChange}
               className="hidden"
             />
-            <span className="text-gray-500 text-xs">{content.length}/500</span>
+            <span className="text-gray-400 text-xs">{content.length}/500</span>
           </div>
 
           <button
             type="submit"
             disabled={loading || (!content.trim() && !imageFile)}
-            className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-5 py-2 rounded-xl text-sm font-medium transition"
+            className="bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white px-5 py-2 rounded-full text-sm font-medium transition shadow-sm"
           >
             {loading ? "Paylaşılıyor..." : "Paylaş"}
           </button>

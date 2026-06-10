@@ -86,8 +86,8 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-gray-400">Yükleniyor...</div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-gray-400 animate-pulse">Yükleniyor...</div>
       </div>
     );
   }
@@ -97,12 +97,12 @@ export default function ProfilePage() {
   const isOwnProfile = session?.user?.username === username;
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gray-50">
       <Navbar />
-      <main className="max-w-2xl mx-auto px-4 pt-20 pb-8">
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 mb-4">
+      <main className="max-w-2xl mx-auto px-4 py-6 page-transition">
+        <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-4 shadow-sm">
           <div className="flex items-start gap-4">
-            <div className="w-20 h-20 rounded-full bg-gray-700 flex items-center justify-center text-2xl font-bold text-white shrink-0 overflow-hidden">
+            <div className="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center text-2xl font-bold text-blue-600 shrink-0 overflow-hidden">
               {user.profileImage ? (
                 <img src={user.profileImage} alt="" className="w-full h-full object-cover" />
               ) : (
@@ -111,7 +111,7 @@ export default function ProfilePage() {
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2">
-                <h1 className="text-xl font-bold text-white">{user.displayName || user.username}</h1>
+                <h1 className="text-xl font-bold text-gray-900">{user.displayName || user.username}</h1>
                 {user.isVerified && (
                   <svg className="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
@@ -119,19 +119,19 @@ export default function ProfilePage() {
                 )}
               </div>
               <p className="text-gray-400 text-sm">@{user.username}</p>
-              {user.bio && <p className="text-gray-300 text-sm mt-2">{user.bio}</p>}
+              {user.bio && <p className="text-gray-600 text-sm mt-2">{user.bio}</p>}
 
               <div className="flex gap-4 mt-3">
-                <span className="text-sm"><strong className="text-white">{user._count.posts}</strong> <span className="text-gray-400">gönderi</span></span>
-                <span className="text-sm"><strong className="text-white">{user._count.followers}</strong> <span className="text-gray-400">takipçi</span></span>
-                <span className="text-sm"><strong className="text-white">{user._count.following}</strong> <span className="text-gray-400">takip</span></span>
+                <span className="text-sm"><strong className="text-gray-900">{user._count.posts}</strong> <span className="text-gray-400">gönderi</span></span>
+                <span className="text-sm"><strong className="text-gray-900">{user._count.followers}</strong> <span className="text-gray-400">takipçi</span></span>
+                <span className="text-sm"><strong className="text-gray-900">{user._count.following}</strong> <span className="text-gray-400">takip</span></span>
               </div>
 
               <div className="mt-3 flex gap-2">
                 {isOwnProfile ? (
                   <button
                     onClick={() => router.push("/settings")}
-                    className="bg-gray-800 text-white text-sm px-4 py-1.5 rounded-full hover:bg-gray-700 transition"
+                    className="bg-gray-100 text-gray-700 text-sm px-4 py-1.5 rounded-full hover:bg-gray-200 transition"
                   >
                     Profili Düzenle
                   </button>
@@ -139,7 +139,7 @@ export default function ProfilePage() {
                   <>
                     <button
                       onClick={handleFollow}
-                      className={`text-sm px-4 py-1.5 rounded-full transition ${following ? "bg-gray-800 text-white hover:bg-red-900 hover:text-red-400" : "bg-blue-600 text-white hover:bg-blue-700"}`}
+                      className={`text-sm px-4 py-1.5 rounded-full transition ${following ? "bg-gray-100 text-gray-700 hover:bg-red-50 hover:text-red-500" : "bg-blue-500 text-white hover:bg-blue-600"}`}
                     >
                       {following ? "Takipten Çık" : "Takip Et"}
                     </button>
@@ -153,7 +153,7 @@ export default function ProfilePage() {
                         const conv = await res.json();
                         router.push(`/messages/${conv.id}`);
                       }}
-                      className="bg-gray-800 text-white text-sm px-4 py-1.5 rounded-full hover:bg-gray-700 transition"
+                      className="bg-gray-100 text-gray-700 text-sm px-4 py-1.5 rounded-full hover:bg-gray-200 transition"
                     >
                       Mesaj Gönder
                     </button>
