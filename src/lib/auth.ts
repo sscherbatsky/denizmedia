@@ -1,7 +1,6 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import GoogleProvider from "next-auth/providers/google";
-import TwitterProvider from "next-auth/providers/twitter";
+// Removed Google and Twitter providers per request
 import { compare } from "bcryptjs";
 import { prisma } from "./prisma";
 import { logIp } from "./iplogger";
@@ -14,23 +13,7 @@ export const authOptions: NextAuthOptions = {
     signIn: "/auth/login",
   },
   providers: [
-    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
-      ? [
-          GoogleProvider({
-            clientId: process.env.GOOGLE_CLIENT_ID,
-            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-          }),
-        ]
-      : []),
-    ...(process.env.TWITTER_CLIENT_ID && process.env.TWITTER_CLIENT_SECRET
-      ? [
-          TwitterProvider({
-            clientId: process.env.TWITTER_CLIENT_ID,
-            clientSecret: process.env.TWITTER_CLIENT_SECRET,
-            version: "2.0",
-          }),
-        ]
-      : []),
+    // Only credentials provider enabled
     CredentialsProvider({
       name: "credentials",
       credentials: {
@@ -86,79 +69,13 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async signIn({ user, account }) {
-      if (account?.provider === "google" || account?.provider === "twitter") {
-        const email = user.email;
-        if (!email) return false;
-
-        let dbUser = await prisma.user.findUnique({ where: { email } });
-
-        if (!dbUser) {
-          const baseUsername = (user.name || email.split("@")[0])
-            .toLowerCase()
-            .replace(/[^a-z0-9._]/g, "")
-            .slice(0, 25);
-
-          let username = baseUsername;
-          let counter = 1;
-          while (await prisma.user.findUnique({ where: { username } })) {
-            username = `${baseUsername}${counter}`;
-            counter++;
-          }
-
-          dbUser = await prisma.user.create({
-            data: {
-              email,
-              username,
-              displayName: user.name || username,
-              profileImage: user.image || null,
-            },
-          });
-        }
-
-        const existingAccount = await prisma.account.findUnique({
-          where: {
-            provider_providerAccountId: {
-              provider: account.provider,
-              providerAccountId: account.providerAccountId,
-            },
-          },
-        });
-
-        if (!existingAccount) {
-          await prisma.account.create({
-            data: {
-              userId: dbUser.id,
-              type: account.type,
-              provider: account.provider,
-              providerAccountId: account.providerAccountId,
-              refresh_token: account.refresh_token as string | undefined,
-              access_token: account.access_token as string | undefined,
-              expires_at: account.expires_at,
-              token_type: account.token_type,
-              scope: account.scope,
-              id_token: account.id_token as string | undefined,
-            },
-          });
-        }
-
-        await logIp(dbUser.username, "oauth", "login");
-      }
+      // No external oauth providers enabled
       return true;
     },
     async jwt({ token, user, account }) {
       if (user) {
-        if (account?.provider === "google" || account?.provider === "twitter") {
-          const dbUser = await prisma.user.findUnique({
-            where: { email: user.email! },
-          });
-          if (dbUser) {
-            token.id = dbUser.id;
-            token.username = dbUser.username;
-          }
-        } else {
-          token.id = user.id;
-          token.username = user.name || "";
-        }
+        token.id = user.id;
+        token.username = user.name || "";
       }
       return token;
     },
