@@ -149,6 +149,15 @@ model Notification {
   @@index([userId, read])
 }
 
+model BotPair {
+  id        String   @id @default(cuid())
+  userText  String
+  replyText String
+  authorId  String?
+  author    User?    @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
 model IpLog {
   id        String   @id @default(cuid())
   username  String

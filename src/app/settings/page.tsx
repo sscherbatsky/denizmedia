@@ -65,6 +65,11 @@ export default function SettingsPage() {
     const data = await res.json();
     if (res.ok) {
       setProfileImage(data.url);
+    } else {
+      setProfilePreview("");
+      setProfileImage("");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      alert(data.error || "Profil fotoğrafı yüklenemedi.");
     }
   };
 

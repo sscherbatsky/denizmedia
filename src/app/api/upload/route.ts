@@ -17,28 +17,37 @@ export async function POST(req: Request) {
   }
 
   const validTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
-  if (!validTypes.includes(file.type)) {
+  const fileType = (file && (file.type || "")) as string;
+  if (fileType && !validTypes.includes(fileType)) {
     return NextResponse.json({ error: "Sadece JPEG, PNG, GIF ve WebP dosyaları yüklenebilir." }, { status: 400 });
   }
 
-  if (file.size > 5 * 1024 * 1024) {
-    return NextResponse.json({ error: "Dosya boyutu 5MB'dan büyük olamaz." }, { status: 400 });
+  // Limit 8MB to be a little more permissive, but keep check
+  const maxSize = 8 * 1024 * 1024;
+  // Some runtimes may not expose `size` on File; guard it
+  const fileSize = (file as any).size as number | undefined;
+  if (fileSize && fileSize > maxSize) {
+    return NextResponse.json({ error: "Dosya boyutu 8MB'dan büyük olamaz." }, { status: 400 });
   }
 
   // Use Vercel Blob if BLOB_READ_WRITE_TOKEN is available, otherwise fallback to local
   if (process.env.BLOB_READ_WRITE_TOKEN) {
     const { put } = await import("@vercel/blob");
-    const ext = file.name.split(".").pop() || "png";
-    const fileName = `${randomUUID()}.${ext}`;
-    const blob = await put(fileName, file, { access: "public" });
-    return NextResponse.json({ url: blob.url }, { status: 201 });
+    try {
+      const ext = (file.name && file.name.split(".").pop()) || (fileType.split("/")[1] || "png");
+      const fileName = `${randomUUID()}.${ext}`;
+      const blob = await put(fileName, file, { access: "public" });
+      return NextResponse.json({ url: blob.url }, { status: 201 });
+    } catch (err) {
+      return NextResponse.json({ error: "Blob yüklemesi başarısız.", details: String(err) }, { status: 500 });
+    }
   } else {
     // Local fallback for development
     const { writeFile, mkdir } = await import("fs/promises");
     const path = await import("path");
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    const ext = file.name.split(".").pop() || "png";
+    const ext = (file.name && file.name.split(".").pop()) || (fileType.split("/")[1] || "png");
     const fileName = `${randomUUID()}.${ext}`;
     const uploadDir = path.join(process.cwd(), "public", "uploads");
     await mkdir(uploadDir, { recursive: true });

@@ -48,6 +48,12 @@ export default function PostForm({ onPostCreated }: PostFormProps) {
         const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
         const uploadData = await uploadRes.json();
         if (uploadRes.ok) imageUrl = uploadData.url;
+        else {
+          console.error("Upload error:", uploadData);
+          alert(uploadData.error || "Fotoğraf yüklenemedi.");
+          setLoading(false);
+          return;
+        }
       }
 
       const res = await fetch("/api/posts", {
