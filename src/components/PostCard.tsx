@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
@@ -29,6 +29,8 @@ export default function PostCard({ id, content, image, author, likes, comments, 
   const { data: session } = useSession();
   const [isLiked, setIsLiked] = useState(likes.some((l) => l.userId === session?.user?.id));
   const [likeCount, setLikeCount] = useState(likes.length);
+  const [animateLike, setAnimateLike] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [showComments, setShowComments] = useState(false);
   const [commentList, setCommentList] = useState<Array<{
     id: string;
@@ -44,6 +46,15 @@ export default function PostCard({ id, content, image, author, likes, comments, 
     const data = await res.json();
     setIsLiked(data.liked);
     setLikeCount((prev) => (data.liked ? prev + 1 : prev - 1));
+    if (data.liked) {
+      try {
+        if (!audioRef.current) audioRef.current = new Audio('/sounds/post.wav');
+        audioRef.current.volume = 0.6;
+        audioRef.current.play().catch(() => {});
+      } catch {}
+      setAnimateLike(true);
+      setTimeout(() => setAnimateLike(false), 700);
+    }
   };
 
   const handleComment = async (e: React.FormEvent) => {
@@ -117,8 +128,8 @@ export default function PostCard({ id, content, image, author, likes, comments, 
           )}
 
           <div className="flex items-center gap-5 mt-3">
-            <button onClick={handleLike} className={`flex items-center gap-1.5 text-sm transition ${isLiked ? "text-red-500" : "text-gray-400 hover:text-red-500"}`}>
-              <svg className="w-5 h-5" fill={isLiked ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+            <button onClick={handleLike} className={`relative flex items-center gap-1.5 text-sm transition ${isLiked ? "text-red-500" : "text-gray-400 hover:text-red-500"}`}>
+              <svg className={`w-5 h-5 ${animateLike ? 'animate-like' : ''}`} fill={isLiked ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
               </svg>
               {likeCount > 0 && likeCount}
