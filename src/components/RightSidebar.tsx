@@ -9,6 +9,7 @@ export default function RightSidebar() {
   const [top, setTop] = useState<any[]>([]);
   const [open, setOpen] = useState<boolean>(true);
   const [verse, setVerse] = useState<VerseResp | null>(null);
+  const [aturk, setAturk] = useState<{ quote?: { text: string }; hourIndex?: number } | null>(null);
   const verseTimer = useRef<number | null>(null);
 
   useEffect(() => {
@@ -26,6 +27,10 @@ export default function RightSidebar() {
       fetch('/api/quran/verse')
         .then(r => r.json())
         .then(d => { if (mounted) setVerse(d); })
+        .catch(() => {});
+      fetch('/api/aturk/quote')
+        .then(r => r.json())
+        .then(d => { if (mounted) setAturk(d); })
         .catch(() => {});
     };
     load();
@@ -64,6 +69,12 @@ export default function RightSidebar() {
                     <div className="mt-2 text-gray-800 font-medium">{(verse as any).verse.surah} {(verse as any).verse.ayah}</div>
                     <div className="mt-1 text-gray-700 italic">{(verse as any).verse.text}</div>
                     <div className="mt-2 text-gray-600">{(verse as any).verse.translation}</div>
+                  </div>
+                )}
+                {aturk && aturk.quote && (
+                  <div className="mt-3 bg-white border border-gray-100 rounded-xl p-3 text-sm">
+                    <div className="text-xs text-gray-500">Atatürk - Nutuk (saatlik söz)</div>
+                    <div className="mt-1 text-gray-700">{aturk.quote.text}</div>
                   </div>
                 )}
               </div>
