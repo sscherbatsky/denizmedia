@@ -28,6 +28,7 @@ model User {
   showFollowers Boolean   @default(true)
   showFollowing Boolean   @default(true)
   themeColor    String?
+  botPairs BotPair[]
 
   accounts          Account[]
   posts             Post[]
