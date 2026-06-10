@@ -1,11 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
+
+type VerseResp = { verse: { surah: string; ayah: number; text: string; translation: string }; hourIndex: number } | { error?: string };
 
 export default function RightSidebar() {
   const [top, setTop] = useState<any[]>([]);
   const [open, setOpen] = useState<boolean>(true);
+  const [verse, setVerse] = useState<VerseResp | null>(null);
+  const verseTimer = useRef<number | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -14,6 +18,20 @@ export default function RightSidebar() {
       .then(data => { if (mounted) setTop(data); })
       .catch(() => {});
     return () => { mounted = false; };
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    const load = () => {
+      fetch('/api/quran/verse')
+        .then(r => r.json())
+        .then(d => { if (mounted) setVerse(d); })
+        .catch(() => {});
+    };
+    load();
+    // refresh every minute to pick up hour changes
+    verseTimer.current = window.setInterval(load, 60 * 1000);
+    return () => { mounted = false; if (verseTimer.current) clearInterval(verseTimer.current); };
   }, []);
 
   return (
@@ -35,6 +53,19 @@ export default function RightSidebar() {
                   </Link>
                 ))}
                 {top.length === 0 && <div className="text-gray-400 text-sm">Henüz veri yok.</div>}
+
+                {verse && 'error' in verse && (
+                  <div className="mt-4 text-xs text-red-500">Kuran ayeti yüklenemedi.</div>
+                )}
+
+                {verse && !(verse as any).error && (
+                  <div className="mt-4 bg-white border border-gray-100 rounded-xl p-3 text-sm">
+                    <div className="text-xs text-gray-500">Kuran Saati Ayeti</div>
+                    <div className="mt-2 text-gray-800 font-medium">{(verse as any).verse.surah} {(verse as any).verse.ayah}</div>
+                    <div className="mt-1 text-gray-700 italic">{(verse as any).verse.text}</div>
+                    <div className="mt-2 text-gray-600">{(verse as any).verse.translation}</div>
+                  </div>
+                )}
               </div>
             </div>
           </aside>
