@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
+import Link from "next/link";
 import PostCard from "@/components/PostCard";
 
 interface UserProfile {
@@ -65,6 +66,20 @@ export default function ProfilePage() {
     }
   }, [status, username, router]);
 
+  // set favicon to profile image when viewing a profile with an image
+  useEffect(() => {
+    if (user?.profileImage) {
+      const link: HTMLLinkElement | null = document.querySelector("link[rel~='icon']");
+      if (link) link.href = user.profileImage;
+      else {
+        const newLink = document.createElement("link");
+        newLink.rel = "icon";
+        newLink.href = user.profileImage;
+        document.head.appendChild(newLink);
+      }
+    }
+  }, [user]);
+
   const handleFollow = async () => {
     const res = await fetch(`/api/users/${username}/follow`, { method: "POST" });
     const data = await res.json();
@@ -123,8 +138,12 @@ export default function ProfilePage() {
 
               <div className="flex gap-4 mt-3">
                 <span className="text-sm"><strong className="text-gray-900">{user._count.posts}</strong> <span className="text-gray-400">gönderi</span></span>
-                <span className="text-sm"><strong className="text-gray-900">{user._count.followers}</strong> <span className="text-gray-400">takipçi</span></span>
-                <span className="text-sm"><strong className="text-gray-900">{user._count.following}</strong> <span className="text-gray-400">takip</span></span>
+                <Link href={`/profile/${user.username}/followers`} className="text-sm">
+                  <strong className="text-gray-900">{user._count.followers}</strong> <span className="text-gray-400">takipçi</span>
+                </Link>
+                <Link href={`/profile/${user.username}/following`} className="text-sm">
+                  <strong className="text-gray-900">{user._count.following}</strong> <span className="text-gray-400">takip</span>
+                </Link>
               </div>
 
               <div className="mt-3 flex gap-2">

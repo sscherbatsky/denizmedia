@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export async function GET(req: Request, { params }: { params: { username: string } }) {
   const { searchParams } = new URL(req.url);
@@ -10,6 +12,20 @@ export async function GET(req: Request, { params }: { params: { username: string
   const user = await prisma.user.findUnique({ where: { username: params.username } });
   if (!user) {
     return NextResponse.json({ error: "Kullanıcı bulunamadı." }, { status: 404 });
+  }
+
+  // If user is private, only allow owner or accepted followers
+  if (user.isPrivate) {
+    const session = await getServerSession(authOptions);
+    const viewerId = session?.user?.id;
+    if (viewerId !== user.id) {
+      const follow = await prisma.follow.findUnique({
+        where: { followerId_followingId: { followerId: viewerId || "", followingId: user.id } },
+      });
+      if (!follow || !follow.accepted) {
+        return NextResponse.json({ error: "Bu hesabın gönderilerini görüntüleme yetkiniz yok." }, { status: 403 });
+      }
+    }
   }
 
   const posts = await prisma.post.findMany({

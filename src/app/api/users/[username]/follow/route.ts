@@ -30,14 +30,16 @@ export async function POST(_req: Request, { params }: { params: { username: stri
 
   if (existing) {
     await prisma.follow.delete({ where: { id: existing.id } });
-    return NextResponse.json({ following: false });
+    return NextResponse.json({ following: false, pending: false });
   }
 
+  const accepted = !targetUser.isPrivate;
+
   await prisma.follow.create({
-    data: { followerId: session.user.id, followingId: targetUser.id },
+    data: { followerId: session.user.id, followingId: targetUser.id, accepted },
   });
 
   await createNotification(targetUser.id, session.user.id, "follow");
 
-  return NextResponse.json({ following: true });
+  return NextResponse.json({ following: accepted, pending: !accepted });
 }

@@ -14,6 +14,10 @@ export async function GET(_req: Request, { params }: { params: { username: strin
       profileImage: true,
       isVerified: true,
       isAdmin: true,
+      isPrivate: true,
+      showFollowers: true,
+      showFollowing: true,
+      themeColor: true,
       createdAt: true,
       _count: {
         select: {

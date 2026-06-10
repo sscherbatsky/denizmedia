@@ -13,6 +13,10 @@ export default function SettingsPage() {
   const [bio, setBio] = useState("");
   const [profileImage, setProfileImage] = useState("");
   const [profilePreview, setProfilePreview] = useState("");
+  const [isPrivate, setIsPrivate] = useState(false);
+  const [showFollowers, setShowFollowers] = useState(true);
+  const [showFollowing, setShowFollowing] = useState(true);
+  const [themeColor, setThemeColor] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -40,6 +44,10 @@ export default function SettingsPage() {
           setBio(data.bio || "");
           setProfileImage(data.profileImage || "");
           setProfilePreview(data.profileImage || "");
+            setIsPrivate(!!data.isPrivate);
+            setShowFollowers(data.showFollowers ?? true);
+            setShowFollowing(data.showFollowing ?? true);
+            setThemeColor(data.themeColor || "");
           setLoading(false);
         });
     }
@@ -70,7 +78,7 @@ export default function SettingsPage() {
       const res = await fetch("/api/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, displayName, bio, profileImage: profileImage || null }),
+        body: JSON.stringify({ username, displayName, bio, profileImage: profileImage || null, isPrivate, showFollowers, showFollowing, themeColor }),
       });
 
       const data = await res.json();
@@ -162,6 +170,26 @@ export default function SettingsPage() {
               />
               <p className="text-blue-500 text-xs text-center mt-2 group-hover:text-blue-600 transition">Fotoğraf Değiştir</p>
             </label>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3">
+            <label className="flex items-center gap-3">
+              <input type="checkbox" checked={isPrivate} onChange={(e) => setIsPrivate(e.target.checked)} />
+              <span className="text-sm text-gray-600">Hesabı gizli yap (onay gerektiren takip istekleri)</span>
+            </label>
+            <label className="flex items-center gap-3">
+              <input type="checkbox" checked={showFollowers} onChange={(e) => setShowFollowers(e.target.checked)} />
+              <span className="text-sm text-gray-600">Takipçi listesini göster</span>
+            </label>
+            <label className="flex items-center gap-3">
+              <input type="checkbox" checked={showFollowing} onChange={(e) => setShowFollowing(e.target.checked)} />
+              <span className="text-sm text-gray-600">Takip edilen listesini göster</span>
+            </label>
+
+            <div>
+              <label className="block text-sm text-gray-500 mb-1.5">Tema Rengi</label>
+              <input type="color" value={themeColor} onChange={(e) => setThemeColor(e.target.value)} className="w-16 h-9 rounded" />
+            </div>
           </div>
 
           <div>

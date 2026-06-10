@@ -19,6 +19,10 @@ export async function GET() {
       displayName: true,
       bio: true,
       profileImage: true,
+      isPrivate: true,
+      showFollowers: true,
+      showFollowing: true,
+      themeColor: true,
       isVerified: true,
       createdAt: true,
     },
@@ -33,7 +37,7 @@ export async function PUT(req: Request) {
     return NextResponse.json({ error: "Giriş yapmanız gerekiyor." }, { status: 401 });
   }
 
-  const { username, displayName, bio, profileImage } = await req.json();
+  const { username, displayName, bio, profileImage, isPrivate, showFollowers, showFollowing, themeColor } = await req.json();
 
   if (username) {
     const validation = validateUsername(username);
@@ -56,6 +60,10 @@ export async function PUT(req: Request) {
       ...(displayName !== undefined && { displayName }),
       ...(bio !== undefined && { bio }),
       ...(profileImage !== undefined && { profileImage }),
+      ...(isPrivate !== undefined && { isPrivate }),
+      ...(showFollowers !== undefined && { showFollowers }),
+      ...(showFollowing !== undefined && { showFollowing }),
+      ...(themeColor !== undefined && { themeColor }),
     },
     select: {
       id: true,

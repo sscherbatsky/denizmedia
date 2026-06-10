@@ -24,6 +24,10 @@ model User {
   lastIp        String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  isPrivate     Boolean   @default(false)
+  showFollowers Boolean   @default(true)
+  showFollowing Boolean   @default(true)
+  themeColor    String?
 
   accounts          Account[]
   posts             Post[]
@@ -95,6 +99,7 @@ model Follow {
   follower    User     @relation("follower", fields: [followerId], references: [id], onDelete: Cascade)
   following   User     @relation("following", fields: [followingId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
+  accepted    Boolean  @default(true)
 
   @@unique([followerId, followingId])
 }
