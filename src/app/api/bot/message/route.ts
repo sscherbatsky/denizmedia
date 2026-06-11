@@ -92,7 +92,8 @@ export async function POST(req: Request) {
     }
 
     // Teach command: "öğret soru => cevap"  (supports =>, ->, ||) - normalized variables declared outside try
-    const teachMatch = text.trim().match(/^öğret\s+(.+)$/i);
+    // Accept both "öğret <payload>" and "öğret: <payload>"
+    const teachMatch = text.trim().match(/^öğret(?:[:\s]+)(.+)$/i);
     if (teachMatch) {
       const payload = teachMatch[1];
       const parts = payload.split(/=>|->|\|\|/).map((p: string) => p.trim()).filter(Boolean);
