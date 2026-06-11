@@ -4,6 +4,7 @@ import "./globals.css";
 import SessionProvider from "@/components/SessionProvider";
 import LeftSidebar from "@/components/LeftSidebar";
 import BotWidget from "@/components/BotWidget";
+import ChunkErrorHandler from "@/components/ChunkErrorHandler";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -37,6 +38,7 @@ export default function RootLayout({
             </div>
           </div>
           <BotWidget />
+          <ChunkErrorHandler />
         </SessionProvider>
       </body>
     </html>
