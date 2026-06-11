@@ -91,11 +91,10 @@ export async function POST(req: Request) {
       }
     }
 
-    // Teach command: "öğret soru => cevap"  (supports =>, ->, ||) - normalized variables declared outside try
-    // Accept both "öğret <payload>" and "öğret: <payload>"
-    const teachMatch = text.trim().match(/^öğret(?:[:\s]+)(.+)$/i);
+    // Teach command: detect 'öğret' anywhere, accept both "öğret <payload>" and "öğret: <payload>"
+    const teachMatch = text.match(/öğret(?:[:\s]+)([\s\S]+)/i);
     if (teachMatch) {
-      const payload = teachMatch[1];
+      const payload = (teachMatch[1] || '').trim();
       const parts = payload.split(/=>|->|\|\|/).map((p: string) => p.trim()).filter(Boolean);
       let userText = '';
       let replyText = '';
@@ -116,22 +115,28 @@ export async function POST(req: Request) {
         } catch (e) {}
         return NextResponse.json({ reply: 'Teşekkürler — bunu öğrendim.', pair: { userText, replyText } });
       } catch (e) {
+        // DB write failed, try robust local persist and return helpful debug info if it fails
         try {
           const dataDir = path.join(process.cwd(), 'data');
           await fs.mkdir(dataDir, { recursive: true });
           const file = path.join(dataDir, 'local_bot_pairs.json');
           let arr: Array<{ userText: string; replyText: string; authorId?: string | null }> = [];
           try {
-            const existing = await fs.readFile(file, 'utf8');
+            const existing = await fs.readFile(file, 'utf8').catch(() => '[]');
             arr = JSON.parse(existing || '[]');
+            if (!Array.isArray(arr)) arr = [];
           } catch (readErr) {
             arr = [];
           }
           arr.push({ userText, replyText, authorId: userId });
-          await fs.writeFile(file, JSON.stringify(arr, null, 2), 'utf8');
-          return NextResponse.json({ reply: 'Teşekkürler — bunu öğrendim (yerelde saklandı).', pair: { userText, replyText }, storedLocal: true });
-        } catch (fsErr) {
-          return NextResponse.json({ reply: 'Öğretme sırasında bir hata oluştu.' });
+          try {
+            await fs.writeFile(file, JSON.stringify(arr, null, 2), 'utf8');
+            return NextResponse.json({ reply: 'Teşekkürler — bunu öğrendim (yerelde saklandı).', pair: { userText, replyText }, storedLocal: true });
+          } catch (fsErr) {
+            return NextResponse.json({ reply: 'Öğretme sırasında bir hata oluştu (yerel kaydetme başarısız).', error: String(fsErr?.message || fsErr) }, { status: 500 });
+          }
+        } catch (fsErrOuter) {
+          return NextResponse.json({ reply: 'Öğretme sırasında bir hata oluştu.', error: String(fsErrOuter?.message || fsErrOuter) }, { status: 500 });
         }
       }
     }
