@@ -187,12 +187,24 @@ export default function BotWidget() {
             `}</style>
 
             <div className="flex gap-2 items-center">
-              <input type="file" accept="image/*" onChange={handleImageChange} className="text-sm" />
+              <label className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-gray-100 text-gray-600 cursor-pointer border border-gray-200">
+                📷
+                <input aria-label="Fotoğraf ekle" type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
+              </label>
+
               {imageBase64 ? (
-                <div className="w-12 h-12 rounded overflow-hidden">
+                <div className="relative w-12 h-12 rounded overflow-hidden">
                   <img src={imageBase64} alt="preview" className="w-full h-full object-cover" />
+                  <button
+                    onClick={send}
+                    title="Fotoğrafı gönder"
+                    className="absolute right-1 bottom-1 bg-blue-500 text-white text-xs px-2 py-1 rounded"
+                  >
+                    Gönder
+                  </button>
                 </div>
               ) : null}
+
               <input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') send(); }} placeholder="DenizBot'a mesaj yaz..." className="flex-1 px-3 py-2 rounded-xl border border-gray-200 text-sm" />
               <button onClick={send} className="bg-blue-500 text-white px-3 py-2 rounded-xl">Gönder</button>
             </div>
