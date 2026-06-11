@@ -32,35 +32,39 @@ export async function POST(req: Request) {
   try {
     if (!text || typeof text !== 'string') return NextResponse.json({ error: 'Metin gerekli' }, { status: 400 });
 
-    // Teach command: "öğret soru => cevap"  (supports =>, ->, | or :::)
+    // Save incoming user message and session (optional)
+    const session = await getServerSession(authOptions);
+    const userId = session?.user?.id || null;
+
+    // Teach command: "öğret soru => cevap"  (supports =>, ->, | or simple: "öğret cevap")
     const teachMatch = text.trim().match(/^öğret\s+(.+)$/i);
     if (teachMatch) {
       const payload = teachMatch[1];
-      const parts = payload.split(/=>|->|\|\||\|/).map(p => p.trim()).filter(Boolean);
-      if (parts.length >= 2) {
-        const userText = parts[0].slice(0, 240);
-        const replyText = parts[1].slice(0, 240);
-        try {
-          const created = await prisma.botPair.create({ data: { userText, replyText, authorId: userId } });
-          // try embeddings if available
-          try {
-            const emb = await embedTextLocal(userText);
-            if (emb && emb.length) {
-              await prisma.embedding.create({ data: { model: 'local', vector: emb, source: 'botpair', sourceId: created.id } });
-            }
-          } catch (e) {}
-          return NextResponse.json({ reply: 'Teşekkürler — bunu öğrendim.' });
-        } catch (e) {
-          return NextResponse.json({ reply: 'Öğretme sırasında bir hata oluştu.' });
+      const parts = payload.split(/=>|->|\|\|:?:?/).map(p => p.trim()).filter(Boolean);
+      try {
+        let userText: string;
+        let replyText: string;
+        if (parts.length >= 2) {
+          userText = parts[0].slice(0, 240);
+          replyText = parts[1].slice(0, 240);
+        } else {
+          // single-part teach: use the same text as both trigger and response
+          userText = parts[0].slice(0, 240);
+          replyText = parts[0].slice(0, 240);
         }
-      } else {
-        return NextResponse.json({ reply: 'Öğretme formatı: "öğret soru => cevap". Örnek: öğret Merhaba => Selam, nasılsın?' });
+        const created = await prisma.botPair.create({ data: { userText, replyText, authorId: userId } });
+        // try embeddings if available
+        try {
+          const emb = await embedTextLocal(userText);
+          if (emb && emb.length) {
+            await prisma.embedding.create({ data: { model: 'local', vector: emb, source: 'botpair', sourceId: created.id } });
+          }
+        } catch (e) {}
+        return NextResponse.json({ reply: 'Teşekkürler — bunu öğrendim.', pair: { userText, replyText } });
+      } catch (e) {
+        return NextResponse.json({ reply: 'Öğretme sırasında bir hata oluştu.' });
       }
     }
-
-    // Save incoming user message (optional)
-    const session = await getServerSession(authOptions);
-    const userId = session?.user?.id || null;
 
     // First, attempt to generate a reply from a local LLM endpoint (user can run one locally).
     const localReply = await generateWithLocalLLM({ prompt: text, timeoutMs: 3000 });

@@ -1,16 +1,21 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { usePathname } from "next/navigation";
 
 export default function BotWidget() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<{ from: "user" | "bot"; text: string }[]>([]);
   const [text, setText] = useState("");
+  const [localPairs, setLocalPairs] = useState<Record<string, string>>({});
   const boxRef = useRef<HTMLDivElement | null>(null);
+  const pathname = usePathname();
 
   useEffect(() => {
     const saved = localStorage.getItem("bot_messages");
     if (saved) setMessages(JSON.parse(saved));
+    const lp = localStorage.getItem('bot_local_pairs');
+    if (lp) setLocalPairs(JSON.parse(lp));
   }, []);
 
   useEffect(() => {
@@ -18,16 +23,32 @@ export default function BotWidget() {
     if (boxRef.current) boxRef.current.scrollTop = boxRef.current.scrollHeight;
   }, [messages]);
 
+  useEffect(() => {
+    localStorage.setItem('bot_local_pairs', JSON.stringify(localPairs));
+  }, [localPairs]);
+
   const send = async () => {
     if (!text.trim()) return;
     const t = text.trim();
     setMessages((m) => [...m, { from: "user", text: t }]);
     setText("");
+    // Hide widget on auth pages
+    if (pathname?.startsWith('/auth')) return;
+
+    // Check local taught pairs first
+    if (localPairs[t]) {
+      setMessages((m) => [...m, { from: 'bot', text: localPairs[t] }]);
+      return;
+    }
     try {
       const res = await fetch('/api/bot/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: t }) });
       const data = await res.json();
       const reply = data.reply || 'Bir şeyler ters gitti.';
       setMessages((m) => [...m, { from: "bot", text: reply }]);
+      // If teaching succeeded and server returned pair, store locally as a fallback
+      if (data.pair && data.pair.userText && data.pair.replyText) {
+        setLocalPairs((p) => ({ ...p, [data.pair.userText]: data.pair.replyText }));
+      }
     } catch (e) {
       setMessages((m) => [...m, { from: "bot", text: 'Sunucuya erişilemiyor.' }]);
     }
