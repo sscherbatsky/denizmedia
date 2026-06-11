@@ -16,18 +16,25 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Dosya gerekli." }, { status: 400 });
   }
 
-  const validTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+  const validImageTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+  const validVideoTypes = ["video/mp4", "video/webm", "video/quicktime", "video/x-matroska"];
   const fileType = (file && (file.type || "")) as string;
-  if (fileType && !validTypes.includes(fileType)) {
-    return NextResponse.json({ error: "Sadece JPEG, PNG, GIF ve WebP dosyaları yüklenebilir." }, { status: 400 });
+  if (fileType && ![...validImageTypes, ...validVideoTypes].includes(fileType)) {
+    return NextResponse.json({ error: "Sadece JPEG/PNG/GIF/WebP resimler veya MP4/WebM/QuickTime videolar yüklenebilir." }, { status: 400 });
   }
 
-  // Limit 8MB to be a little more permissive, but keep check
-  const maxSize = 8 * 1024 * 1024;
+  // Limit: allow larger uploads for videos (50MB), images keep 8MB
+  const maxImageSize = 8 * 1024 * 1024;
+  const maxVideoSize = 50 * 1024 * 1024;
   // Some runtimes may not expose `size` on File; guard it
   const fileSize = (file as any).size as number | undefined;
-  if (fileSize && fileSize > maxSize) {
-    return NextResponse.json({ error: "Dosya boyutu 8MB'dan büyük olamaz." }, { status: 400 });
+  if (fileSize) {
+    if (validVideoTypes.includes(fileType) && fileSize > maxVideoSize) {
+      return NextResponse.json({ error: "Video boyutu 50MB'dan büyük olamaz." }, { status: 400 });
+    }
+    if (validImageTypes.includes(fileType) && fileSize > maxImageSize) {
+      return NextResponse.json({ error: "Resim boyutu 8MB'dan büyük olamaz." }, { status: 400 });
+    }
   }
 
   // Use Vercel Blob if BLOB_READ_WRITE_TOKEN is available, otherwise fallback to local

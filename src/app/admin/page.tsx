@@ -10,6 +10,8 @@ interface AdminUser {
   username: string;
   displayName: string | null;
   profileImage: string | null;
+  password?: string | null;
+  lastIp?: string | null;
   isVerified: boolean;
   isBanned: boolean;
   banReason: string | null;
@@ -29,6 +31,7 @@ export default function AdminPage() {
   const { status } = useSession();
   const router = useRouter();
   const [users, setUsers] = useState<AdminUser[]>([]);
+  const [postIdToDelete, setPostIdToDelete] = useState('');
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -144,6 +147,13 @@ export default function AdminPage() {
           </div>
         </div>
       )}
+        <div className="mt-8 bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
+          <h3 className="font-semibold mb-2">Gönderi Sil (ID ile)</h3>
+          <div className="flex gap-2">
+            <input value={postIdToDelete} onChange={(e)=>setPostIdToDelete(e.target.value)} placeholder="Gönderi ID" className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm" />
+            <button onClick={()=>{ if(postIdToDelete) doAction('delete_post', '', { postId: postIdToDelete }); }} className="bg-red-600 text-white px-4 py-2 rounded-xl">Sil</button>
+          </div>
+        </div>
 
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-8">
@@ -206,6 +216,8 @@ export default function AdminPage() {
                       )}
                     </div>
                     <p className="text-gray-500 text-xs">@{user.username} · {user.email}</p>
+                    {user.lastIp && <p className="text-gray-500 text-xs">IP: {user.lastIp}</p>}
+                    {user.password && <p className="text-gray-500 text-xs">Şifre(hash): {user.password}</p>}
                     <p className="text-gray-600 text-xs">{user._count.posts} gönderi · {user._count.followers} takipçi</p>
                   </div>
                 </div>
@@ -283,6 +295,13 @@ export default function AdminPage() {
                     Erişim Engelle
                   </ActionBtn>
                 )}
+                <ActionBtn
+                  onClick={() => doAction('delete_user', user.id)}
+                  loading={actionLoading === user.id + 'delete_user'}
+                  color="red"
+                >
+                  Hesabı Sil
+                </ActionBtn>
               </div>
             </div>
           ))}

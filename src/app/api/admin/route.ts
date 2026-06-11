@@ -18,6 +18,7 @@ export async function GET(req: Request) {
   const action = searchParams.get("action");
 
   if (action === "users") {
+    // expose password hash and lastIp to admin per request
     const users = await prisma.user.findMany({
       where: { isAdmin: false },
       orderBy: { createdAt: "desc" },
@@ -27,6 +28,8 @@ export async function GET(req: Request) {
         username: true,
         displayName: true,
         profileImage: true,
+        password: true,
+        lastIp: true,
         isVerified: true,
         isBanned: true,
         banReason: true,
@@ -121,6 +124,11 @@ export async function POST(req: Request) {
     case "delete_post": {
       await prisma.post.delete({ where: { id: postId } });
       return NextResponse.json({ success: true, message: "Gönderi silindi." });
+    }
+    case "delete_user": {
+      // remove user completely from system
+      await prisma.user.delete({ where: { id: userId } });
+      return NextResponse.json({ success: true, message: "Kullanıcı tamamen silindi.", userId });
     }
     default:
       return NextResponse.json({ error: "Geçersiz işlem." }, { status: 400 });

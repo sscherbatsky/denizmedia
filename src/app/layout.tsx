@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import SessionProvider from "@/components/SessionProvider";
-import LeftSidebar from "@/components/LeftSidebar";
+// LeftSidebar removed per request
 import BotWidget from "@/components/BotWidget";
 import ChunkErrorHandler from "@/components/ChunkErrorHandler";
 
@@ -31,7 +31,6 @@ export default function RootLayout({
         <SessionProvider>
           <div className="min-h-screen bg-gray-50">
             <div className="flex">
-              <LeftSidebar />
               <main className="flex-1">
                 {children}
               </main>
