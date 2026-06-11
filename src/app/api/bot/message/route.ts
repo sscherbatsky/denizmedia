@@ -95,7 +95,8 @@ export async function POST(req: Request) {
     const teachMatch = text.match(/öğret(?:[:\s]+)([\s\S]+)/i);
     if (teachMatch) {
       const payload = (teachMatch[1] || '').trim();
-      const parts = payload.split(/=>|->|\|\|/).map((p: string) => p.trim()).filter(Boolean);
+      // Accept common separators: =>, ->, ||, =
+      const parts = payload.split(/=>|->|\|\||=/).map((p: string) => p.trim()).filter(Boolean);
       let userText = '';
       let replyText = '';
       if (parts.length >= 2) {
@@ -133,7 +134,9 @@ export async function POST(req: Request) {
             await fs.writeFile(file, JSON.stringify(arr, null, 2), 'utf8');
             return NextResponse.json({ reply: 'Teşekkürler — bunu öğrendim (yerelde saklandı).', pair: { userText, replyText }, storedLocal: true });
           } catch (fsErr) {
-            return NextResponse.json({ reply: 'Öğretme sırasında bir hata oluştu (yerel kaydetme başarısız).', error: String(fsErr?.message || fsErr) }, { status: 500 });
+            // If writing to filesystem fails (e.g., platform is read-only), return the learned pair
+            // so the client can persist it locally. Do not treat this as fatal.
+            return NextResponse.json({ reply: 'Teşekkürler — öğrendim (yerel kaydetme başarısız, lütfen uygulama tekrar denesin).', pair: { userText, replyText }, storedLocal: false });
           }
         } catch (fsErrOuter) {
           return NextResponse.json({ reply: 'Öğretme sırasında bir hata oluştu.', error: String(fsErrOuter?.message || fsErrOuter) }, { status: 500 });
