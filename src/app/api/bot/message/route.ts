@@ -25,7 +25,8 @@ function simpleResponder(input: string) {
   if (t.includes('şaka') || t.includes('komik')) return jokes[Math.floor(Math.random() * jokes.length)];
   if (t.includes('film')) return `Şunu izleyebilirsin: ${films[Math.floor(Math.random() * films.length)]}`;
   if (t.includes('öneri') || t.includes('tavsiye')) return 'Ne tür önerisi istersin? (film, kitap, yemek)';
-  if (t.length < 5) return 'Kısa oldu — örnekler: "Nasılsın?", "Bana bir şaka söyle", "Film önerisi ver". Hangisini istersin?';
+  // Allow short messages (1-4 chars) to be processed; only reject empty input here
+  if (t.length === 0) return 'Kısa oldu — örnekler: "Nasılsın?", "Bana bir şaka söyle", "Film önerisi ver". Hangisini istersin?';
   // fallback: more engaging prompt for teaching
   return `Güzel bir giriş: "${input.slice(0, 120)}". Bunu daha iyi öğrenmemi istersen "öğret" komutuyla bana örnekler verebilirsin.`;
 }
@@ -143,6 +144,29 @@ export async function POST(req: Request) {
     const teachMatch = effectiveText.match(/öğret(?:[:\s]+)([\s\S]+)/i);
     if (teachMatch) {
       const payload = (teachMatch[1] || '').trim();
+      // Support quoted forms for clearer teaching, e.g. "trigger" "reply" or "trigger" reply...
+      // Try to extract two quoted strings first
+      const twoQuoted = payload.match(/^["'`](.+?)["'`]\s*[\-:—–]?\s*["'`](.+?)["'`]$/s);
+      if (twoQuoted) {
+        const userText = twoQuoted[1].slice(0, 240);
+        const replyText = twoQuoted[2].slice(0, 240);
+        try {
+          const created = await prisma.botPair.create({ data: { userText, replyText, authorId: userId } });
+          try { const emb = await embedTextLocal(userText); if (emb && emb.length) await prisma.embedding.create({ data: { model: 'local', vector: emb, source: 'botpair', sourceId: created.id } }); } catch (e) {}
+          return NextResponse.json({ reply: 'Tamam — öğrendim. Bundan sonra bunu hatırlayıp cevap vereceğim.', pair: { userText, replyText }, ocrText: ocrText || undefined });
+        } catch (e) {}
+      }
+      // If only the trigger is quoted, use the rest as reply
+      const firstQuoted = payload.match(/^["'`](.+?)["'`](?:\s*[\-:—–]?\s*(.+))?$/s);
+      if (firstQuoted) {
+        const userText = (firstQuoted[1] || '').slice(0, 240);
+        const replyText = ((firstQuoted[2] || '').trim() || userText).slice(0, 240);
+        try {
+          const created = await prisma.botPair.create({ data: { userText, replyText, authorId: userId } });
+          try { const emb = await embedTextLocal(userText); if (emb && emb.length) await prisma.embedding.create({ data: { model: 'local', vector: emb, source: 'botpair', sourceId: created.id } }); } catch (e) {}
+          return NextResponse.json({ reply: 'Tamam — öğrendim. Bundan sonra bunu hatırlayıp cevap vereceğim.', pair: { userText, replyText }, ocrText: ocrText || undefined });
+        } catch (e) {}
+      }
       // Accept common separators: =>, ->, ||, =
       const parts = payload.split(/=>|->|\|\||=/).map((p: string) => p.trim()).filter(Boolean);
       let userText = '';
