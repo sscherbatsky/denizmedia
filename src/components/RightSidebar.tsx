@@ -1,16 +1,20 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { usePathname } from 'next/navigation';
 import Link from "next/link";
 
 type VerseResp = { verse: { surah: string; ayah: number; text: string; translation: string }; hourIndex: number } | { error?: string };
 
 export default function RightSidebar() {
+  const pathname = usePathname();
   const [top, setTop] = useState<any[]>([]);
   const [open, setOpen] = useState<boolean>(true);
   const [verse, setVerse] = useState<VerseResp | null>(null);
   const [aturk, setAturk] = useState<{ quote?: { text: string }; hourIndex?: number } | null>(null);
   const verseTimer = useRef<number | null>(null);
+
+  if (pathname?.startsWith('/auth')) return null;
 
   useEffect(() => {
     let mounted = true;

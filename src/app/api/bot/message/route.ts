@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { generateWithLocalLLM, embedTextLocal } from "@/lib/ai/local";
+import fs from 'fs/promises';
+import path from 'path';
 
 function simpleResponder(input: string) {
   const t = input.trim().toLowerCase();
@@ -62,7 +64,24 @@ export async function POST(req: Request) {
         } catch (e) {}
         return NextResponse.json({ reply: 'Teşekkürler — bunu öğrendim.', pair: { userText, replyText } });
       } catch (e) {
-        return NextResponse.json({ reply: 'Öğretme sırasında bir hata oluştu.' });
+        // If DB write fails, persist to a local JSON file as a fallback so teachings aren't lost.
+        try {
+          const dataDir = path.join(process.cwd(), 'data');
+          await fs.mkdir(dataDir, { recursive: true });
+          const file = path.join(dataDir, 'local_bot_pairs.json');
+          let arr: Array<{ userText: string; replyText: string; authorId?: string | null }> = [];
+          try {
+            const existing = await fs.readFile(file, 'utf8');
+            arr = JSON.parse(existing || '[]');
+          } catch (readErr) {
+            arr = [];
+          }
+          arr.push({ userText, replyText, authorId: userId });
+          await fs.writeFile(file, JSON.stringify(arr, null, 2), 'utf8');
+          return NextResponse.json({ reply: 'Teşekkürler — bunu öğrendim (yerelde saklandı).', pair: { userText, replyText }, storedLocal: true });
+        } catch (fsErr) {
+          return NextResponse.json({ reply: 'Öğretme sırasında bir hata oluştu.' });
+        }
       }
     }
 

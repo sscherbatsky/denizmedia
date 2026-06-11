@@ -54,6 +54,8 @@ export default function BotWidget() {
     }
   };
 
+  if (pathname?.startsWith('/auth')) return null;
+
   return (
     <>
       <div className="bot-button">
