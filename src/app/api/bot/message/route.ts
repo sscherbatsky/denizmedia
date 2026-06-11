@@ -103,8 +103,75 @@ export async function POST(req: Request) {
         userText = parts[0].slice(0, 240);
         replyText = parts[1].slice(0, 240);
       } else {
-        userText = parts[0].slice(0, 240);
-        replyText = parts[0].slice(0, 240);
+        const single = (parts[0] || '').trim();
+        // Try natural-language forms like: "seni sikerim demek hakarettir"
+        const demekMatch = single.match(/^(.+?)\s+demek(?:tir|dir|ti?r|ki)?\s+(.+)$/i)
+          || single.match(/^(.+?)\s+demek(?:\s+ki)?\s+(.+)$/i)
+          || single.match(/^(.+?)\s+anlam(?:ı|i|dir)?\s+(.+)$/i);
+        if (demekMatch) {
+          userText = demekMatch[1].trim().slice(0, 240);
+          replyText = demekMatch[2].trim().slice(0, 240);
+        } else {
+          // Fallback: if the payload looks like two tokens, use first token as trigger
+          // and the rest as reply. Otherwise teach the whole payload as both trigger
+          // and reply (previous behavior).
+          const tokens = single.split(/\s+/).filter(Boolean);
+          if (tokens.length >= 2) {
+            userText = tokens.shift()!.slice(0, 240);
+            replyText = tokens.join(' ').slice(0, 240);
+          } else {
+            userText = single.slice(0, 240);
+            replyText = single.slice(0, 240);
+          }
+        }
+      }
+      // Determine client IP and admin list
+      const headers = (req as any).headers || (req as Request).headers;
+      const xf = typeof headers.get === 'function' ? headers.get('x-forwarded-for') : undefined;
+      const xr = typeof headers.get === 'function' ? headers.get('x-real-ip') : undefined;
+      const clientIp = (xf && xf.split(',')[0].trim()) || xr || '127.0.0.1';
+      const adminList = (process.env.ADMIN_IPS || process.env.ADMIN_IP || '').split(',').map(s=>s.trim()).filter(Boolean);
+
+      // Check if this trigger already exists (DB first, then local file). If exists, only admin can overwrite.
+      try {
+        const existingDb = await prisma.botPair.findFirst({ where: { userText: { equals: userText, mode: 'insensitive' } } });
+        if (existingDb) {
+          if (!adminList.includes(clientIp)) {
+            return NextResponse.json({ reply: `Bu zaten öğrenilmiş: "${existingDb.replyText}". Sadece admin değiştirebilir.` , pair: { userText: existingDb.userText, replyText: existingDb.replyText } });
+          } else {
+            // admin: update DB
+            try {
+              const upd = await prisma.botPair.update({ where: { id: existingDb.id }, data: { replyText: replyText } });
+              return NextResponse.json({ reply: 'Tamam — güncellendi.', pair: { userText: upd.userText, replyText: upd.replyText } });
+            } catch (e) {
+              // fall through to local fallback update
+            }
+          }
+        }
+      } catch (e) {
+        // DB may be unavailable — proceed to check local file
+      }
+
+      // Local file check
+      try {
+        const file = path.join(process.cwd(), 'data', 'local_bot_pairs.json');
+        const existingContent = await fs.readFile(file, 'utf8').catch(()=>'[]');
+        const arr = JSON.parse(existingContent || '[]');
+        const norm = (s:string)=>(s||'').trim().toLowerCase();
+        const foundIndex = arr.findIndex((p:any)=>norm(p.userText) === norm(userText));
+        if (foundIndex !== -1) {
+          const found = arr[foundIndex];
+          if (!adminList.includes(clientIp)) {
+            return NextResponse.json({ reply: `Bu zaten öğrenilmiş: "${found.replyText}". Sadece admin değiştirebilir.`, pair: { userText: found.userText, replyText: found.replyText } });
+          } else {
+            // admin: update local file
+            arr[foundIndex].replyText = replyText;
+            await fs.writeFile(file, JSON.stringify(arr, null, 2), 'utf8');
+            return NextResponse.json({ reply: 'Tamam — güncellendi.', pair: { userText: arr[foundIndex].userText, replyText: arr[foundIndex].replyText } });
+          }
+        }
+      } catch (e) {
+        // ignore local file errors for existence check
       }
         try {
           const created = await prisma.botPair.create({ data: { userText, replyText, authorId: userId } });
