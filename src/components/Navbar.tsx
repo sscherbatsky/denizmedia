@@ -140,37 +140,55 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Icon Navigation */}
-          <div className="hidden sm:flex items-center gap-1 flex-shrink-0">
-            <NavIcon href="/feed" active={isActive("/feed")} title="Ana Sayfa">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-            </NavIcon>
+          {/* Compact Logo Navigation (icon + label) - avoid duplicating left sidebar */}
+          <div className="hidden sm:flex items-center gap-3 flex-shrink-0">
+            <Link href="/feed" className="flex flex-col items-center text-center p-1 hover:bg-gray-50 rounded-md">
+              <svg className={`w-5 h-5 ${isActive('/feed') ? 'text-blue-500' : 'text-gray-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              </svg>
+              <span className="text-[11px] text-gray-500 mt-1">Ana Sayfa</span>
+            </Link>
 
-            <NavIcon href="/messages" active={isActive("/messages")} title="Mesajlar" badge={msgCount} badgeColor="red">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-            </NavIcon>
+            <Link href="/messages" className="flex flex-col items-center text-center p-1 hover:bg-gray-50 rounded-md relative">
+              <svg className={`w-5 h-5 ${isActive('/messages') ? 'text-blue-500' : 'text-gray-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+              {msgCount > 0 && <span className="text-[10px] bg-red-500 text-white rounded-full px-1 mt-1">{msgCount > 99 ? '99+' : msgCount}</span>}
+              <span className="text-[11px] text-gray-500 mt-1">Mesajlar</span>
+            </Link>
 
-            <NavIcon href="/notifications" active={isActive("/notifications")} title="Bildirimler" badge={notifCount} badgeColor="red">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-            </NavIcon>
+            <Link href="/notifications" className="flex flex-col items-center text-center p-1 hover:bg-gray-50 rounded-md relative">
+              <svg className={`w-5 h-5 ${isActive('/notifications') ? 'text-blue-500' : 'text-gray-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              </svg>
+              {notifCount > 0 && <span className="text-[10px] bg-red-500 text-white rounded-full px-1 mt-1">{notifCount > 99 ? '99+' : notifCount}</span>}
+              <span className="text-[11px] text-gray-500 mt-1">Bildirimler</span>
+            </Link>
 
-            <NavIcon href={`/profile/${username}`} active={isActive(`/profile/${username}`)} title="Profil">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </NavIcon>
+            <Link href={`/profile/${username}`} className="flex flex-col items-center text-center p-1 hover:bg-gray-50 rounded-md">
+              <svg className={`w-5 h-5 ${isActive(`/profile/${username}`) ? 'text-blue-500' : 'text-gray-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              <span className="text-[11px] text-gray-500 mt-1">Profil</span>
+            </Link>
 
-            <NavIcon href="/settings" active={isActive("/settings")} title="Ayarlar">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </NavIcon>
+            <Link href="/settings" className="flex flex-col items-center text-center p-1 hover:bg-gray-50 rounded-md">
+              <svg className={`w-5 h-5 ${isActive('/settings') ? 'text-blue-500' : 'text-gray-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <span className="text-[11px] text-gray-500 mt-1">Ayarlar</span>
+            </Link>
 
             <button
               onClick={() => signOut({ callbackUrl: "/auth/login" })}
-              className="p-2.5 rounded-xl text-gray-400 hover:text-red-500 hover:bg-red-50 transition"
+              className="flex flex-col items-center text-center p-1 hover:bg-red-50 rounded-md text-gray-500"
               title="Çıkış"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
               </svg>
+              <span className="text-[11px] text-gray-500 mt-1">Çıkış</span>
             </button>
           </div>
 
