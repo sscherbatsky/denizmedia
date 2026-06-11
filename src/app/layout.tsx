@@ -3,8 +3,6 @@ import localFont from "next/font/local";
 import "./globals.css";
 import SessionProvider from "@/components/SessionProvider";
 import LeftSidebar from "@/components/LeftSidebar";
-import RightSidebar from "@/components/RightSidebar";
-import BotWidget from "@/components/BotWidget";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -35,8 +33,6 @@ export default function RootLayout({
               <main className="flex-1">
                 {children}
               </main>
-              <RightSidebar />
-              <BotWidget />
             </div>
           </div>
         </SessionProvider>
