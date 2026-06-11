@@ -41,7 +41,8 @@ export default function BotWidget() {
   }, [localPairs]);
 
   const send = async () => {
-    if (!text.trim()) return;
+    // allow sending when either text or an image is present
+    if (!text.trim() && !imageBase64) return;
     const t = text.trim();
     const userMsgId = String(Date.now()) + Math.random().toString(16).slice(2);
     setMessages((m) => [...m, { id: userMsgId, from: "user", text: t }]);
