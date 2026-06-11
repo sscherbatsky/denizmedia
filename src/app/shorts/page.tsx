@@ -18,10 +18,13 @@ export default function ShortsPage() {
       if (res.ok && j.url) {
         setVideoUrl(j.url);
       } else {
-        alert(j.error || 'Yükleme başarısız');
+        const err = j?.error || j?.message || 'Yükleme başarısız';
+        alert(err + (j?.details ? ` — ${j.details}` : ""));
+        console.error('Upload error:', j);
       }
     } catch (e) {
-      alert('Yükleme hatası');
+      console.error('Upload exception', e);
+      alert('Yükleme hatası: ' + (e as any)?.message || 'Hata');
     } finally {
       setUploading(false);
     }

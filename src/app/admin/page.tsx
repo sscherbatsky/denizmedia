@@ -41,6 +41,8 @@ export default function AdminPage() {
   const [allowedIps, setAllowedIps] = useState<string[]>([]);
   const [ownerEmail, setOwnerEmail] = useState<string | null>(null);
   const [newIp, setNewIp] = useState("");
+  const [pwInputs, setPwInputs] = useState<Record<string, string>>({});
+  const [showPwInput, setShowPwInput] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -294,6 +296,17 @@ export default function AdminPage() {
                 )}
 
                 <ActionBtn onClick={() => { setModal({ type: 'set_password', userId: user.id }); setModalInput(''); }} loading={actionLoading === user.id + 'set_password'} color="gray">Şifre Ayarla</ActionBtn>
+                <div className="flex items-center gap-2">
+                  {showPwInput[user.id] ? (
+                    <>
+                      <input value={pwInputs[user.id] || ""} onChange={(e)=>setPwInputs(s=>({ ...s, [user.id]: e.target.value }))} placeholder="Yeni şifre" className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-1 text-sm" />
+                      <button onClick={() => { const np = pwInputs[user.id]||""; if(np.length===0){ setMessage('Şifre boş olamaz'); return;} doAction('set_password', user.id, { newPassword: np }); setShowPwInput(s=>({ ...s, [user.id]: false })); }} className="bg-green-600 text-white px-3 py-1 rounded-xl text-sm">Kaydet</button>
+                      <button onClick={() => setShowPwInput(s=>({ ...s, [user.id]: false }))} className="bg-gray-100 px-3 py-1 rounded-xl text-sm">İptal</button>
+                    </>
+                  ) : (
+                    <button onClick={() => setShowPwInput(s=>({ ...s, [user.id]: true }))} className="bg-gray-50 border border-gray-200 px-3 py-1 rounded-xl text-sm">Hızlı Şifre Değiştir</button>
+                  )}
+                </div>
 
                 <ActionBtn onClick={() => doAction('delete_user', user.id)} loading={actionLoading === user.id + 'delete_user'} color="red">Hesabı Sil</ActionBtn>
 
