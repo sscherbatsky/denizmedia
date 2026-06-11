@@ -139,7 +139,9 @@ export async function POST(req: Request) {
             return NextResponse.json({ reply: 'Teşekkürler — öğrendim (yerel kaydetme başarısız, lütfen uygulama tekrar denesin).', pair: { userText, replyText }, storedLocal: false });
           }
         } catch (fsErrOuter) {
-          return NextResponse.json({ reply: 'Öğretme sırasında bir hata oluştu.', error: String(fsErrOuter?.message || fsErrOuter) }, { status: 500 });
+          // Log the error but return the learned pair so client can store it locally.
+          console.error('Teach fallback error:', fsErrOuter);
+          return NextResponse.json({ reply: 'Teşekkürler — öğrendim (yerel kaydetme başarısız, istemciye pair döndürüldü).', pair: { userText, replyText }, storedLocal: false });
         }
       }
     }
