@@ -1,5 +1,8 @@
 "use client";
 
+// Minor edit: ensure this file shows up as modified for Git commits
+// (harmless comment added to allow committing from the working tree)
+
 import { useEffect, useState, useRef } from "react";
 import { usePathname } from 'next/navigation';
 import Link from "next/link";
