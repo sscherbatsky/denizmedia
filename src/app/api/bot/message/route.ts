@@ -29,33 +29,84 @@ function simpleResponder(input: string) {
 
 export async function POST(req: Request) {
   const parsed = await req.json().catch(() => ({} as any));
-  const text = parsed?.text;
+  const text = (parsed?.text || '').toString();
 
   try {
     if (!text || typeof text !== 'string') return NextResponse.json({ error: 'Metin gerekli' }, { status: 400 });
 
-    // Save incoming user message and session (optional)
     const session = await getServerSession(authOptions);
     const userId = session?.user?.id || null;
 
-    // Teach command: "öğret soru => cevap"  (supports =>, ->, | or simple: "öğret cevap")
+    const lower = text.trim().toLowerCase();
+
+    // Identity answers forced to Deniz Bozkurt
+    if (/seni\s+yaratan|yaratın|yaratıc(ı|in)|baban\s+kim|bu\s+siteyi\s+kim|yaratıcı\s+kim/i.test(lower)) {
+      return NextResponse.json({ reply: 'Deniz Bozkurt' });
+    }
+
+    // Correction attempt: "hayır yanlış biliyorsun doğrusu: <doğru cevap>"
+    const corrMatch = lower.match(/hayır\s+yanlış[\s\S]*doğru(?:su)?:\s*(.+)$/i);
+    if (corrMatch) {
+      const newText = corrMatch[1]?.trim();
+      // get client IP heuristically
+      const headers = (req as any).headers || (req as Request).headers;
+      const xf = typeof headers.get === 'function' ? headers.get('x-forwarded-for') : undefined;
+      const xr = typeof headers.get === 'function' ? headers.get('x-real-ip') : undefined;
+      const clientIp = (xf && xf.split(',')[0].trim()) || xr || '127.0.0.1';
+      const adminIp = process.env.ADMIN_IP || process.env.ADMIN_IPS?.split(',')[0]?.trim();
+      if (adminIp && clientIp === adminIp) {
+        // Admin allowed to edit: update most recent pair (DB or local fallback)
+        try {
+          const last = await prisma.botPair.findFirst({ orderBy: { createdAt: 'desc' } });
+          if (last) {
+            const updated = await prisma.botPair.update({ where: { id: last.id }, data: { replyText: newText.slice(0, 240) } });
+            // Also update local file if exists
+            try {
+              const file = path.join(process.cwd(), 'data', 'local_bot_pairs.json');
+              const content = await fs.readFile(file, 'utf8').catch(() => '[]');
+              const arr = JSON.parse(content || '[]');
+              if (arr && arr.length) {
+                arr[arr.length - 1].replyText = newText;
+                await fs.writeFile(file, JSON.stringify(arr, null, 2), 'utf8');
+              }
+            } catch (e) {}
+            return NextResponse.json({ reply: 'Öğrenilmiş bilgi güncellendi (admin).' });
+          }
+        } catch (e) {
+          // DB not available -> try local file
+          try {
+            const file = path.join(process.cwd(), 'data', 'local_bot_pairs.json');
+            const content = await fs.readFile(file, 'utf8').catch(() => '[]');
+            const arr = JSON.parse(content || '[]');
+            if (arr && arr.length) {
+              arr[arr.length - 1].replyText = newText;
+              await fs.writeFile(file, JSON.stringify(arr, null, 2), 'utf8');
+              return NextResponse.json({ reply: 'Yerelde saklanan son öğrenme güncellendi (admin).' });
+            }
+          } catch (e2) {}
+        }
+        return NextResponse.json({ reply: 'Güncellenecek öğe bulunamadı.' });
+      } else {
+        return NextResponse.json({ reply: 'Bunu değiştiremezsin. Sadece admin (izinli IP) düzeltebilir.' });
+      }
+    }
+
+    // Teach command: "öğret soru => cevap"  (supports =>, ->, ||) - normalized variables declared outside try
     const teachMatch = text.trim().match(/^öğret\s+(.+)$/i);
     if (teachMatch) {
       const payload = teachMatch[1];
-      const parts = payload.split(/=>|->|\|\|:?:?/).map(p => p.trim()).filter(Boolean);
+      const parts = payload.split(/=>|->|\|\|/).map((p: string) => p.trim()).filter(Boolean);
+      let userText = '';
+      let replyText = '';
+      if (parts.length >= 2) {
+        userText = parts[0].slice(0, 240);
+        replyText = parts[1].slice(0, 240);
+      } else {
+        userText = parts[0].slice(0, 240);
+        replyText = parts[0].slice(0, 240);
+      }
       try {
-        let userText: string;
-        let replyText: string;
-        if (parts.length >= 2) {
-          userText = parts[0].slice(0, 240);
-          replyText = parts[1].slice(0, 240);
-        } else {
-          // single-part teach: use the same text as both trigger and response
-          userText = parts[0].slice(0, 240);
-          replyText = parts[0].slice(0, 240);
-        }
         const created = await prisma.botPair.create({ data: { userText, replyText, authorId: userId } });
-        // try embeddings if available
         try {
           const emb = await embedTextLocal(userText);
           if (emb && emb.length) {
@@ -64,7 +115,6 @@ export async function POST(req: Request) {
         } catch (e) {}
         return NextResponse.json({ reply: 'Teşekkürler — bunu öğrendim.', pair: { userText, replyText } });
       } catch (e) {
-        // If DB write fails, persist to a local JSON file as a fallback so teachings aren't lost.
         try {
           const dataDir = path.join(process.cwd(), 'data');
           await fs.mkdir(dataDir, { recursive: true });
@@ -86,37 +136,67 @@ export async function POST(req: Request) {
     }
 
     // First, attempt to generate a reply from a local LLM endpoint (user can run one locally).
-    const localReply = await generateWithLocalLLM({ prompt: text, timeoutMs: 3000 });
+    const localReply = await generateWithLocalLLM({ prompt: text, timeoutMs: 2500 });
     if (localReply) {
-      // persist as training/example pair as well
       try {
         await prisma.botPair.create({ data: { userText: text.slice(0, 240), replyText: localReply.slice(0, 240), authorId: userId } });
-      } catch (e) {
-        // ignore persistence errors
-      }
+      } catch (e) {}
       return NextResponse.json({ reply: localReply });
     }
 
-    // Otherwise fallback to DB-based naive retrieval
-    const key = (text.split(" ")[0] || text).slice(0, 80);
-    const candidates = await prisma.botPair.findMany({ where: { userText: { contains: key, mode: 'insensitive' } }, orderBy: { createdAt: 'desc' }, take: 10 });
-
-    let reply = '';
-    if (candidates.length > 0) {
-      reply = candidates[0].replyText;
-    } else {
-      const any = await prisma.botPair.findMany({ take: 20 });
-      if (any.length > 0) reply = any[Math.floor(Math.random() * any.length)].replyText;
-      else reply = 'Şu an öğreniyorum — biraz sonra daha iyi cevaplar verebilirim.';
+    // Load local fallback pairs (if any)
+    let localPairs: Array<{ userText: string; replyText: string }> = [];
+    try {
+      const file = path.join(process.cwd(), 'data', 'local_bot_pairs.json');
+      const content = await fs.readFile(file, 'utf8').catch(() => '[]');
+      localPairs = JSON.parse(content || '[]');
+    } catch (e) {
+      localPairs = [];
     }
 
+    // Try exact match against local pairs
+    const norm = (s: string) => s.trim().toLowerCase();
+    const exactLocal = localPairs.find((p) => norm(p.userText) === norm(text));
+    if (exactLocal) return NextResponse.json({ reply: exactLocal.replyText });
+
+    // Query DB for exact or containing matches
+    try {
+      const exactDb = await prisma.botPair.findFirst({ where: { userText: { equals: text, mode: 'insensitive' } } });
+      if (exactDb) return NextResponse.json({ reply: exactDb.replyText });
+    } catch (e) {}
+
+    // Substring matching in DB
+    let reply = '';
+    try {
+      const key = (text.split(" ")[0] || text).slice(0, 80);
+      const candidates = await prisma.botPair.findMany({ where: { userText: { contains: key, mode: 'insensitive' } }, orderBy: { createdAt: 'desc' }, take: 10 });
+      if (candidates.length > 0) reply = candidates[0].replyText;
+    } catch (e) {
+      // ignore DB errors
+    }
+
+    // If still no reply, try local substring match
+    if (!reply) {
+      const sub = localPairs.find((p) => norm(p.userText).includes(norm(text)) || norm(text).includes(norm(p.userText)));
+      if (sub) reply = sub.replyText;
+    }
+
+    // Fallbacks
+    if (!reply) {
+      try {
+        const any = await prisma.botPair.findMany({ take: 20 });
+        if (any.length > 0) reply = any[Math.floor(Math.random() * any.length)].replyText;
+      } catch (e) {}
+    }
+    if (!reply) reply = simpleResponder(text || '');
+
+    // Try to persist this interaction as an example (best-effort)
     try {
       await prisma.botPair.create({ data: { userText: text.slice(0, 240), replyText: reply.slice(0, 240), authorId: userId } });
     } catch (e) {}
 
     return NextResponse.json({ reply });
   } catch (err: any) {
-    // If DB or other error occurs, log and return a simple local reply so the bot remains responsive.
     console.error('Bot message handler error:', err?.message || err);
     const reply = simpleResponder(text || '');
     return NextResponse.json({ reply });

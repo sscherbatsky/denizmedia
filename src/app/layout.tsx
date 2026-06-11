@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import SessionProvider from "@/components/SessionProvider";
 import LeftSidebar from "@/components/LeftSidebar";
+import BotWidget from "@/components/BotWidget";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -35,6 +36,7 @@ export default function RootLayout({
               </main>
             </div>
           </div>
+          <BotWidget />
         </SessionProvider>
       </body>
     </html>
