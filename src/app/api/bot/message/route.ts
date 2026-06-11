@@ -71,6 +71,22 @@ export async function POST(req: Request) {
     const lower = (text || '').trim().toLowerCase();
     const effectiveText = (text && text.trim()) ? text.trim() : (ocrText || '');
 
+    // Quick math: handle multiplication queries like "2*3", "2 x 3", "2 çarpı 3", "2 kere 3" or "2 ile 3 kaç eder"
+    try {
+      const mulSimple = effectiveText.match(/^\s*(\d+)\s*(?:\*|x|×|çarpı|times)\s*(\d+)\s*=?\s*$/i);
+      const mulNatural = effectiveText.match(/(\d+)\s*(?:kere|ile|çarpı)\s*(\d+)/i) || effectiveText.match(/(\d+)\s*[x×]\s*(\d+)/i);
+      const mulAny = mulSimple || mulNatural;
+      if (mulAny) {
+        const a = parseInt(mulAny[1], 10);
+        const b = parseInt(mulAny[2], 10);
+        if (!Number.isNaN(a) && !Number.isNaN(b)) {
+          return NextResponse.json({ reply: String(a * b) });
+        }
+      }
+    } catch (e) {
+      // ignore math parse errors and continue
+    }
+
     // Identity answers forced to Deniz Bozkurt
     if (/seni\s+yaratan|yaratın|yaratıc(ı|in)|baban\s+kim|bu\s+siteyi\s+kim|yaratıcı\s+kim/i.test(lower)) {
       return NextResponse.json({ reply: 'Deniz Bozkurt' });
