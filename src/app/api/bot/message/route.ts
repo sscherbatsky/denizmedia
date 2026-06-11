@@ -5,6 +5,9 @@ import { authOptions } from "@/lib/auth";
 import { generateWithLocalLLM, embedTextLocal } from "@/lib/ai/local";
 import fs from 'fs/promises';
 import path from 'path';
+import util from 'util';
+import { execFile } from 'child_process';
+const execFileP = util.promisify(execFile);
 
 function simpleResponder(input: string) {
   const t = input.trim().toLowerCase();
@@ -32,12 +35,41 @@ export async function POST(req: Request) {
   const text = (parsed?.text || '').toString();
 
   try {
-    if (!text || typeof text !== 'string') return NextResponse.json({ error: 'Metin gerekli' }, { status: 400 });
+    if (!text || typeof text !== 'string') {
+      // allow image-only requests (OCR)
+      const maybeImage = (parsed?.imageBase64 || '').toString();
+      if (!maybeImage) return NextResponse.json({ error: 'Metin veya görsel gerekli' }, { status: 400 });
+    }
+
+    // If an image was provided as base64, try OCR (best-effort using tesseract CLI)
+    let ocrText = '';
+    const imageBase64 = (parsed?.imageBase64 || '') as string;
+    if (imageBase64) {
+      try {
+        const uploadsDir = path.join(process.cwd(), 'data', 'uploads');
+        await fs.mkdir(uploadsDir, { recursive: true });
+        const m = imageBase64.match(/^data:(.+);base64,(.+)$/);
+        const b = Buffer.from(m ? m[2] : imageBase64, 'base64');
+        const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.png`;
+        const filePath = path.join(uploadsDir, filename);
+        await fs.writeFile(filePath, b);
+        try {
+          const { stdout } = await execFileP('tesseract', [filePath, 'stdout']);
+          ocrText = (stdout || '').toString().trim();
+        } catch (e) {
+          // tesseract may not be installed; ignore and continue
+          console.error('OCR failed (tesseract):', (e as any)?.message || e);
+        }
+      } catch (e) {
+        console.error('Image handling error:', (e as any)?.message || e);
+      }
+    }
 
     const session = await getServerSession(authOptions);
     const userId = session?.user?.id || null;
 
-    const lower = text.trim().toLowerCase();
+    const lower = (text || '').trim().toLowerCase();
+    const effectiveText = (text && text.trim()) ? text.trim() : (ocrText || '');
 
     // Identity answers forced to Deniz Bozkurt
     if (/seni\s+yaratan|yaratın|yaratıc(ı|in)|baban\s+kim|bu\s+siteyi\s+kim|yaratıcı\s+kim/i.test(lower)) {
@@ -92,7 +124,7 @@ export async function POST(req: Request) {
     }
 
     // Teach command: detect 'öğret' anywhere, accept both "öğret <payload>" and "öğret: <payload>"
-    const teachMatch = text.match(/öğret(?:[:\s]+)([\s\S]+)/i);
+    const teachMatch = effectiveText.match(/öğret(?:[:\s]+)([\s\S]+)/i);
     if (teachMatch) {
       const payload = (teachMatch[1] || '').trim();
       // Accept common separators: =>, ->, ||, =
@@ -181,7 +213,7 @@ export async function POST(req: Request) {
               await prisma.embedding.create({ data: { model: 'local', vector: emb, source: 'botpair', sourceId: created.id } });
             }
           } catch (e) {}
-          return NextResponse.json({ reply: 'Tamam — öğrendim. Bundan sonra bunu hatırlayıp cevap vereceğim.', pair: { userText, replyText } });
+          return NextResponse.json({ reply: 'Tamam — öğrendim. Bundan sonra bunu hatırlayıp cevap vereceğim.', pair: { userText, replyText }, ocrText: ocrText || undefined });
         } catch (e) {
         // DB write failed, try robust local persist and return helpful debug info if it fails
         try {
@@ -199,27 +231,27 @@ export async function POST(req: Request) {
           arr.push({ userText, replyText, authorId: userId });
           try {
             await fs.writeFile(file, JSON.stringify(arr, null, 2), 'utf8');
-            return NextResponse.json({ reply: 'Tamam — öğrendim. Bundan sonra bunu hatırlayıp cevap vereceğim.', pair: { userText, replyText }, storedLocal: true });
+            return NextResponse.json({ reply: 'Tamam — öğrendim. Bundan sonra bunu hatırlayıp cevap vereceğim.', pair: { userText, replyText }, storedLocal: true, ocrText: ocrText || undefined });
           } catch (fsErr) {
             // If writing to filesystem fails (e.g., platform is read-only), return the learned pair
             // so the client can persist it locally. Do not treat this as fatal.
-            return NextResponse.json({ reply: 'Tamam — öğrendim. Bundan sonra bunu hatırlayıp cevap vereceğim.', pair: { userText, replyText }, storedLocal: false });
+            return NextResponse.json({ reply: 'Tamam — öğrendim. Bundan sonra bunu hatırlayıp cevap vereceğim.', pair: { userText, replyText }, storedLocal: false, ocrText: ocrText || undefined });
           }
         } catch (fsErrOuter) {
           // Log the error but return the learned pair so client can store it locally.
           console.error('Teach fallback error:', fsErrOuter);
-          return NextResponse.json({ reply: 'Tamam — öğrendim. Bundan sonra bunu hatırlayıp cevap vereceğim.', pair: { userText, replyText }, storedLocal: false });
+          return NextResponse.json({ reply: 'Tamam — öğrendim. Bundan sonra bunu hatırlayıp cevap vereceğim.', pair: { userText, replyText }, storedLocal: false, ocrText: ocrText || undefined });
         }
       }
     }
 
     // First, attempt to generate a reply from a local LLM endpoint (user can run one locally).
-    const localReply = await generateWithLocalLLM({ prompt: text, timeoutMs: 2500 });
+    const localReply = await generateWithLocalLLM({ prompt: effectiveText, timeoutMs: 2500 });
     if (localReply) {
       try {
-        await prisma.botPair.create({ data: { userText: text.slice(0, 240), replyText: localReply.slice(0, 240), authorId: userId } });
+        await prisma.botPair.create({ data: { userText: (effectiveText||'').slice(0, 240), replyText: localReply.slice(0, 240), authorId: userId } });
       } catch (e) {}
-      return NextResponse.json({ reply: localReply });
+      return NextResponse.json({ reply: localReply, ocrText: ocrText || undefined });
     }
 
     // Load local fallback pairs (if any)
@@ -234,19 +266,19 @@ export async function POST(req: Request) {
 
     // Try exact match against local pairs
     const norm = (s: string) => s.trim().toLowerCase();
-    const exactLocal = localPairs.find((p) => norm(p.userText) === norm(text));
+    const exactLocal = localPairs.find((p) => norm(p.userText) === norm(effectiveText || text));
     if (exactLocal) return NextResponse.json({ reply: exactLocal.replyText });
 
     // Query DB for exact or containing matches
     try {
-      const exactDb = await prisma.botPair.findFirst({ where: { userText: { equals: text, mode: 'insensitive' } } });
+      const exactDb = await prisma.botPair.findFirst({ where: { userText: { equals: effectiveText || text, mode: 'insensitive' } } });
       if (exactDb) return NextResponse.json({ reply: exactDb.replyText });
     } catch (e) {}
 
     // Substring matching in DB
     let reply = '';
     try {
-      const key = (text.split(" ")[0] || text).slice(0, 80);
+      const key = ((effectiveText || text).split(" ")[0] || (effectiveText || text)).slice(0, 80);
       const candidates = await prisma.botPair.findMany({ where: { userText: { contains: key, mode: 'insensitive' } }, orderBy: { createdAt: 'desc' }, take: 10 });
       if (candidates.length > 0) reply = candidates[0].replyText;
     } catch (e) {
@@ -255,7 +287,7 @@ export async function POST(req: Request) {
 
     // If still no reply, try local substring match
     if (!reply) {
-      const sub = localPairs.find((p) => norm(p.userText).includes(norm(text)) || norm(text).includes(norm(p.userText)));
+      const sub = localPairs.find((p) => norm(p.userText).includes(norm(effectiveText || text)) || norm(effectiveText || text).includes(norm(p.userText)));
       if (sub) reply = sub.replyText;
     }
 
@@ -270,10 +302,10 @@ export async function POST(req: Request) {
 
     // Try to persist this interaction as an example (best-effort)
     try {
-      await prisma.botPair.create({ data: { userText: text.slice(0, 240), replyText: reply.slice(0, 240), authorId: userId } });
+      await prisma.botPair.create({ data: { userText: (effectiveText||'').slice(0, 240), replyText: reply.slice(0, 240), authorId: userId } });
     } catch (e) {}
 
-    return NextResponse.json({ reply });
+    return NextResponse.json({ reply, ocrText: ocrText || undefined });
   } catch (err: any) {
     console.error('Bot message handler error:', err?.message || err);
     const reply = simpleResponder(text || '');

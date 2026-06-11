@@ -7,6 +7,7 @@ export default function BotWidget() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Array<{ id: string; from: "user" | "bot"; text: string; typing?: boolean; fullText?: string }>>([]);
   const [text, setText] = useState("");
+  const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [localPairs, setLocalPairs] = useState<Record<string, string>>({});
   const boxRef = useRef<HTMLDivElement | null>(null);
   const typingTimers = useRef<Record<string, number>>({});
@@ -62,8 +63,15 @@ export default function BotWidget() {
       const placeholderId = String(Date.now()) + Math.random().toString(16).slice(2);
       setMessages((m) => [...m, { id: placeholderId, from: 'bot', text: '', typing: true }]);
 
-      const res = await fetch('/api/bot/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: t }) });
+      const body: any = { text: t };
+      if (imageBase64) body.imageBase64 = imageBase64;
+      const res = await fetch('/api/bot/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       const data = await res.json();
+      // If OCR text present, show it as a bot message (so user can see what the bot read)
+      if (data?.ocrText) {
+        const ocrId = String(Date.now()) + Math.random().toString(16).slice(2);
+        setMessages((m) => [...m, { id: ocrId, from: 'bot', text: `Görselden okunan: ${data.ocrText}` }]);
+      }
       const reply = data.reply || 'Bir şeyler ters gitti.';
 
       // replace placeholder with typing + fullText
@@ -77,9 +85,22 @@ export default function BotWidget() {
         setLocalPairs((p) => ({ ...p, [k]: v }));
         // server returned pair; client already persisted it locally (no noisy system message)
       }
+      // clear attached image after send
+      setImageBase64(null);
     } catch (e) {
       setMessages((m) => [...m, { id: String(Date.now()) + 'err', from: "bot", text: 'Sunucuya erişilemiyor.' }]);
     }
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const res = reader.result as string | null;
+      if (res) setImageBase64(res);
+    };
+    reader.readAsDataURL(f);
   };
 
   function startTypingAnimation(id: string, fullText: string) {
@@ -164,7 +185,13 @@ export default function BotWidget() {
               }
             `}</style>
 
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center">
+              <input type="file" accept="image/*" onChange={handleImageChange} className="text-sm" />
+              {imageBase64 ? (
+                <div className="w-12 h-12 rounded overflow-hidden">
+                  <img src={imageBase64} alt="preview" className="w-full h-full object-cover" />
+                </div>
+              ) : null}
               <input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') send(); }} placeholder="DenizBot'a mesaj yaz..." className="flex-1 px-3 py-2 rounded-xl border border-gray-200 text-sm" />
               <button onClick={send} className="bg-blue-500 text-white px-3 py-2 rounded-xl">Gönder</button>
             </div>
