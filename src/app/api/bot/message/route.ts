@@ -106,16 +106,16 @@ export async function POST(req: Request) {
         userText = parts[0].slice(0, 240);
         replyText = parts[0].slice(0, 240);
       }
-      try {
-        const created = await prisma.botPair.create({ data: { userText, replyText, authorId: userId } });
         try {
-          const emb = await embedTextLocal(userText);
-          if (emb && emb.length) {
-            await prisma.embedding.create({ data: { model: 'local', vector: emb, source: 'botpair', sourceId: created.id } });
-          }
-        } catch (e) {}
-        return NextResponse.json({ reply: 'Teşekkürler — bunu öğrendim.', pair: { userText, replyText } });
-      } catch (e) {
+          const created = await prisma.botPair.create({ data: { userText, replyText, authorId: userId } });
+          try {
+            const emb = await embedTextLocal(userText);
+            if (emb && emb.length) {
+              await prisma.embedding.create({ data: { model: 'local', vector: emb, source: 'botpair', sourceId: created.id } });
+            }
+          } catch (e) {}
+          return NextResponse.json({ reply: 'Tamam — öğrendim. Bundan sonra bunu hatırlayıp cevap vereceğim.', pair: { userText, replyText } });
+        } catch (e) {
         // DB write failed, try robust local persist and return helpful debug info if it fails
         try {
           const dataDir = path.join(process.cwd(), 'data');
@@ -132,16 +132,16 @@ export async function POST(req: Request) {
           arr.push({ userText, replyText, authorId: userId });
           try {
             await fs.writeFile(file, JSON.stringify(arr, null, 2), 'utf8');
-            return NextResponse.json({ reply: 'Teşekkürler — bunu öğrendim (yerelde saklandı).', pair: { userText, replyText }, storedLocal: true });
+            return NextResponse.json({ reply: 'Tamam — öğrendim. Bundan sonra bunu hatırlayıp cevap vereceğim.', pair: { userText, replyText }, storedLocal: true });
           } catch (fsErr) {
             // If writing to filesystem fails (e.g., platform is read-only), return the learned pair
             // so the client can persist it locally. Do not treat this as fatal.
-            return NextResponse.json({ reply: 'Teşekkürler — öğrendim (yerel kaydetme başarısız, lütfen uygulama tekrar denesin).', pair: { userText, replyText }, storedLocal: false });
+            return NextResponse.json({ reply: 'Tamam — öğrendim. Bundan sonra bunu hatırlayıp cevap vereceğim.', pair: { userText, replyText }, storedLocal: false });
           }
         } catch (fsErrOuter) {
           // Log the error but return the learned pair so client can store it locally.
           console.error('Teach fallback error:', fsErrOuter);
-          return NextResponse.json({ reply: 'Teşekkürler — öğrendim (yerel kaydetme başarısız, istemciye pair döndürüldü).', pair: { userText, replyText }, storedLocal: false });
+          return NextResponse.json({ reply: 'Tamam — öğrendim. Bundan sonra bunu hatırlayıp cevap vereceğim.', pair: { userText, replyText }, storedLocal: false });
         }
       }
     }

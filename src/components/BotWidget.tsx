@@ -75,11 +75,7 @@ export default function BotWidget() {
         const k = String(data.pair.userText).trim().toLowerCase();
         const v = String(data.pair.replyText);
         setLocalPairs((p) => ({ ...p, [k]: v }));
-        // show brief system message if server couldn't persist it
-        if (data.storedLocal === false) {
-          const sysId = String(Date.now()) + Math.random().toString(16).slice(2);
-          setMessages((m) => [...m, { id: sysId, from: 'bot', text: 'Not: Öğretme sunucuda saklanamadı, cevabı yerelde kaydettim.' }]);
-        }
+        // server returned pair; client already persisted it locally (no noisy system message)
       }
     } catch (e) {
       setMessages((m) => [...m, { id: String(Date.now()) + 'err', from: "bot", text: 'Sunucuya erişilemiyor.' }]);
