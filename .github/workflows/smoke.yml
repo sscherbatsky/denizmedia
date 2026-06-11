@@ -1,0 +1,20 @@
+name: Smoke Test
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [ main ]
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    env:
+      DEPLOY_URL: ${{ secrets.DEPLOY_URL }}
+    steps:
+      - name: Wait for deployment
+        run: sleep 5
+      - name: Run smoke test against deployed app
+        run: |
+          if [ -z "$DEPLOY_URL" ]; then echo "DEPLOY_URL secret not set"; exit 1; fi
+          echo "Testing $DEPLOY_URL/api/bot/message"
+          curl -sS -X POST "$DEPLOY_URL/api/bot/message" -H "Content-Type: application/json" -d '{"text":"nasılsın"}' | jq || true

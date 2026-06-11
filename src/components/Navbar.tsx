@@ -149,6 +149,20 @@ export default function Navbar() {
               <span className="text-[11px] text-gray-500 mt-1">Ana Sayfa</span>
             </Link>
 
+            <Link href="/shorts" className="flex flex-col items-center text-center p-1 hover:bg-gray-50 rounded-md">
+              <svg className={`w-5 h-5 ${isActive('/shorts') ? 'text-blue-500' : 'text-gray-500'}`} viewBox="0 0 24 24" fill="currentColor">
+                <path d="M5 3v18l15-9L5 3z" />
+              </svg>
+              <span className="text-[11px] text-gray-500 mt-1">Shorts</span>
+            </Link>
+
+            <Link href="/events" className="flex flex-col items-center text-center p-1 hover:bg-gray-50 rounded-md">
+              <svg className={`w-5 h-5 ${isActive('/events') ? 'text-blue-500' : 'text-gray-500'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3M3 11h18M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <span className="text-[11px] text-gray-500 mt-1">Etkinlikler</span>
+            </Link>
+
             <Link href="/messages" className="flex flex-col items-center text-center p-1 hover:bg-gray-50 rounded-md relative">
               <svg className={`w-5 h-5 ${isActive('/messages') ? 'text-blue-500' : 'text-gray-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
@@ -210,6 +224,8 @@ export default function Navbar() {
         {menuOpen && (
           <div className="sm:hidden mt-3 pt-3 border-t border-gray-100 flex flex-col gap-1">
             <MobileNavLink href="/feed" onClick={() => setMenuOpen(false)} icon="🏠">Ana Sayfa</MobileNavLink>
+            <MobileNavLink href="/shorts" onClick={() => setMenuOpen(false)} icon="🎬">Shorts</MobileNavLink>
+            <MobileNavLink href="/events" onClick={() => setMenuOpen(false)} icon="📅">Etkinlikler</MobileNavLink>
             <MobileNavLink href="/messages" onClick={() => setMenuOpen(false)} icon="💬" badge={msgCount}>Mesajlar</MobileNavLink>
             <MobileNavLink href="/notifications" onClick={() => setMenuOpen(false)} icon="🔔" badge={notifCount}>Bildirimler</MobileNavLink>
             <MobileNavLink href={`/profile/${username}`} onClick={() => setMenuOpen(false)} icon="👤">Profil</MobileNavLink>

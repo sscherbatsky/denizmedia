@@ -18,17 +18,28 @@ function simpleResponder(input: string) {
   ];
   const films = ['The Matrix', 'Inception', 'Interstellar', 'Ayla', 'G.O.R.A.'];
   const greetings = ['Merhaba! Nasıl yardımcı olabilirim?', 'Selam! Nasılsın?', 'Hey! Bir şey sorabilir misin?'];
-
   if (/^(hi|hello|selam|merhaba|sağol|hey)\b/.test(t)) return greetings[Math.floor(Math.random() * greetings.length)];
   if (t.includes('nasıl') && t.includes('sin')) return ['İyiyim, teşekkürler — ya sen?', 'Gayet iyiyim, sen nasılsın?'][Math.floor(Math.random()*2)];
   if (t.includes('adın') || t.includes('isim')) return 'Ben DenizBot — bana istediğini öğretebilirsin.';
   if (t.includes('şaka') || t.includes('komik')) return jokes[Math.floor(Math.random() * jokes.length)];
   if (t.includes('film')) return `Şunu izleyebilirsin: ${films[Math.floor(Math.random() * films.length)]}`;
   if (t.includes('öneri') || t.includes('tavsiye')) return 'Ne tür önerisi istersin? (film, kitap, yemek)';
-  // Allow short messages (1-4 chars) to be processed; only reject empty input here
+
+  // Empathetic handling for boredom / feeling down
+  if (/\b(sıkıl|sıkıldım|çok sıkıldım|canım sıkılıyor|canım sıkıldı|offf|sıkıntı|sıkıcı)\b/.test(t)) {
+    const opts = [
+      'Üzgünüm, sıkıldıysan birlikte yapabileceğimiz şeyler var: istersen film/oyun/şaka önerebilirim. Ne istersin?',
+      'Sıkılmana üzüldüm — bir hikâye anlatayım mı, yoksa sana birkaç kısa oyun fikri söyleyeyim mi?',
+      'Anlıyorum — dışarıda kısa bir yürüyüş, bir playlist veya beraber küçük bir oyun oynamak iyi gelebilir. Hangisini deneyeyim?'
+    ];
+    return opts[Math.floor(Math.random() * opts.length)];
+  }
+
+  // Allow empty input to prompt for examples
   if (t.length === 0) return 'Kısa oldu — örnekler: "Nasılsın?", "Bana bir şaka söyle", "Film önerisi ver". Hangisini istersin?';
-  // fallback: more engaging prompt for teaching
-  return `Güzel bir giriş: "${input.slice(0, 120)}". Bunu daha iyi öğrenmemi istersen "öğret" komutuyla bana örnekler verebilirsin.`;
+
+  // Generic fallback: invite clarification but mention teach option briefly
+  return `Anladım: "${input.slice(0, 120)}". Bunu biraz açar mısın? Ya da bunu öğretmek istersen "öğret" komutunu kullanabilirsin.`;
 }
 
 export async function POST(req: Request) {
@@ -58,8 +69,20 @@ export async function POST(req: Request) {
           const { stdout } = await execFileP('tesseract', [filePath, 'stdout']);
           ocrText = (stdout || '').toString().trim();
         } catch (e) {
-          // tesseract may not be installed; ignore and continue
-          console.error('OCR failed (tesseract):', (e as any)?.message || e);
+          // tesseract CLI may not be installed; try tesseract.js fallback (best-effort)
+          console.error('OCR failed (tesseract CLI):', (e as any)?.message || e);
+          try {
+            const { createWorker } = await import('tesseract.js');
+            const worker = createWorker();
+            await worker.load();
+            // try Turkish model first, fallback to default if not available
+            try { await worker.loadLanguage('tur'); await worker.initialize('tur'); } catch (langErr) { try { await worker.loadLanguage('eng'); await worker.initialize('eng'); } catch(_){} }
+            const { data } = await worker.recognize(filePath);
+            ocrText = (data?.text || '').toString().trim();
+            await worker.terminate();
+          } catch (e2) {
+            console.error('OCR fallback (tesseract.js) failed:', (e2 as any)?.message || e2);
+          }
         }
       } catch (e) {
         console.error('Image handling error:', (e as any)?.message || e);
@@ -286,12 +309,45 @@ export async function POST(req: Request) {
     }
 
     // First, attempt to generate a reply from a local LLM endpoint (user can run one locally).
-    const localReply = await generateWithLocalLLM({ prompt: effectiveText, timeoutMs: 2500 });
+    // Use a clearer instruction prompt and a longer timeout so lightweight local models have time to respond.
+    const llmPrompt = `You are a helpful Turkish assistant. Reply concisely and helpfully to the user's message below. If the message is an image OCR result, prefer commenting on the content.\n\nUser: ${effectiveText}`;
+    let localReply = await generateWithLocalLLM({ prompt: llmPrompt, timeoutMs: 8000 });
+    // If first attempt failed, retry once with a slightly different instruction to increase chance of answer.
+    if (!localReply) {
+      const retryPrompt = `You are an assistant that always tries to give a short, relevant, and polite answer in Turkish. Reply to: ${effectiveText}`;
+      localReply = await generateWithLocalLLM({ prompt: retryPrompt, timeoutMs: 8000 });
+    }
     if (localReply) {
       try {
         await prisma.botPair.create({ data: { userText: (effectiveText||'').slice(0, 240), replyText: localReply.slice(0, 240), authorId: userId } });
       } catch (e) {}
       return NextResponse.json({ reply: localReply, ocrText: ocrText || undefined });
+    }
+
+    // If local LLM didn't answer, optionally fall back to OpenAI (if API key provided)
+    if (!localReply && process.env.OPENAI_API_KEY) {
+      try {
+        const oaModel = process.env.OPENAI_MODEL || 'gpt-3.5-turbo';
+        const oaResp = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+          },
+          body: JSON.stringify({ model: oaModel, messages: [ { role: 'system', content: 'You are a helpful Turkish assistant.' }, { role: 'user', content: effectiveText } ], max_tokens: 300 }),
+        });
+        if (oaResp.ok) {
+          const j = await oaResp.json();
+          const choice = j?.choices?.[0]?.message?.content || j?.choices?.[0]?.text || null;
+          if (choice) {
+            const replyText = (choice || '').toString().trim();
+            try { await prisma.botPair.create({ data: { userText: (effectiveText||'').slice(0,240), replyText: replyText.slice(0,240), authorId: userId } }); } catch (e) {}
+            return NextResponse.json({ reply: replyText, ocrText: ocrText || undefined, source: 'openai' });
+          }
+        }
+      } catch (e) {
+        console.error('OpenAI call failed:', (e as any)?.message || e);
+      }
     }
 
     // Load local fallback pairs (if any)

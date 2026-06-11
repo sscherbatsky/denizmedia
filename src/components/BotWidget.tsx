@@ -138,7 +138,7 @@ export default function BotWidget() {
 
       {open && (
         <div className="bot-panel">
-          <div className="bg-white border border-gray-200 rounded-xl shadow-lg w-80 p-3">
+          <div className="bg-white border border-gray-200 rounded-xl shadow-lg w-80 max-w-full p-3 sm:w-80">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">🤖</div>
@@ -193,7 +193,7 @@ export default function BotWidget() {
               </label>
 
               {imageBase64 ? (
-                <div className="relative w-12 h-12 rounded overflow-hidden">
+                <div className="relative w-10 h-10 sm:w-12 sm:h-12 rounded overflow-hidden">
                   <img src={imageBase64} alt="preview" className="w-full h-full object-cover" />
                   <button
                     onClick={send}

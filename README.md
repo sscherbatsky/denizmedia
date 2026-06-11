@@ -70,3 +70,19 @@ Tarayıcıda [http://localhost:3000](http://localhost:3000) adresini açın.
 - Şifre: `admin`
 
 Admin ilk giriş yapıldığında otomatik olarak oluşturulur.
+
+## Ücretsiz kullanım ve OCR notları
+
+- Ücret ödemek istemiyorsan `OPENAI_API_KEY` veya benzeri ücretli API anahtarlarını Vercel/GitHub ortam değişkenlerine ekleme. Kod, anahtar yoksa OpenAI çağrısını çalıştırmaz.
+- Lokal OCR: sunucuda önce `tesseract` CLI denenir. Kurulu değilse `tesseract.js` fallback'i devreye girer. macOS için:
+
+```bash
+brew install tesseract
+```
+
+- Lokal LLM: Yerel bir model çalıştırıp `LOCAL_LLM_URL` ile bağlarsan (varsayılan `http://127.0.0.1:8000/generate`) dış maliyet olmadan daha iyi cevaplar alabilirsin.
+
+## Deploy smoke-test (GitHub Actions)
+
+Bir deploy sonrası basit bir smoke-test çalıştırmak istersen repo secret olarak `DEPLOY_URL` ekleyip aşağıdaki GitHub Action'ı kullanabilirsin: `.github/workflows/smoke.yml` dosyası repoda bulunuyor. Test, `/api/bot/message` endpoint'ine küçük bir istek gönderir.
+
