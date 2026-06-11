@@ -48,12 +48,13 @@ export default function BotWidget() {
     // Hide widget on auth pages
     if (pathname?.startsWith('/auth')) return;
 
-    // Check local taught pairs first
-    if (localPairs[t]) {
-      // animate local reply
+    // Check local taught pairs first (use normalized key)
+    const normKey = t.trim().toLowerCase();
+    if (localPairs[normKey]) {
+      const replyText = localPairs[normKey];
       const id = String(Date.now()) + Math.random().toString(16).slice(2);
-      setMessages((m) => [...m, { id, from: 'bot', text: '', typing: true, fullText: localPairs[t] }]);
-      startTypingAnimation(id, localPairs[t]);
+      setMessages((m) => [...m, { id, from: 'bot', text: '', typing: true, fullText: replyText }]);
+      startTypingAnimation(id, replyText);
       return;
     }
     try {
@@ -69,9 +70,16 @@ export default function BotWidget() {
       setMessages((m) => m.map(msg => msg.id === placeholderId ? { ...msg, fullText: reply, typing: true } : msg));
       startTypingAnimation(placeholderId, reply);
 
-      // If teaching succeeded and server returned pair, store locally as a fallback
-      if (data.pair && data.pair.userText && data.pair.replyText) {
-        setLocalPairs((p) => ({ ...p, [data.pair.userText]: data.pair.replyText }));
+      // If server returned a learned pair, always persist it in client localPairs (normalized key)
+      if (data?.pair && data.pair.userText && data.pair.replyText) {
+        const k = String(data.pair.userText).trim().toLowerCase();
+        const v = String(data.pair.replyText);
+        setLocalPairs((p) => ({ ...p, [k]: v }));
+        // show brief system message if server couldn't persist it
+        if (data.storedLocal === false) {
+          const sysId = String(Date.now()) + Math.random().toString(16).slice(2);
+          setMessages((m) => [...m, { id: sysId, from: 'bot', text: 'Not: Öğretme sunucuda saklanamadı, cevabı yerelde kaydettim.' }]);
+        }
       }
     } catch (e) {
       setMessages((m) => [...m, { id: String(Date.now()) + 'err', from: "bot", text: 'Sunucuya erişilemiyor.' }]);
