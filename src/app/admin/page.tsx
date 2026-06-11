@@ -100,6 +100,15 @@ export default function AdminPage() {
       doAction("ban", modal.userId, { reason: modalInput || "Kural ihlali" });
     } else if (modal.type === "timeout") {
       doAction("timeout", modal.userId, { duration: modalInput || "24" });
+    } else if (modal.type === "delete_user") {
+      // require explicit confirmation word
+      if ((modalInput || "").trim().toUpperCase() !== "SİL") {
+        setMessage("Onay için lütfen 'SİL' yazın.");
+        return;
+      }
+      doAction("delete_user", modal.userId);
+    } else if (modal.type === "delete_user_posts") {
+      doAction("delete_user_posts", modal.userId);
     }
     setModal(null);
     setModalInput("");
@@ -120,13 +129,31 @@ export default function AdminPage() {
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white border border-gray-200 rounded-2xl p-6 w-full max-w-sm mx-4 shadow-xl">
             <h3 className="text-gray-900 font-semibold mb-4">
-              {modal.type === "ban" ? "Kullanıcıyı Banla" : "Timeout Uygula"}
+              {modal.type === "ban"
+                ? "Kullanıcıyı Banla"
+                : modal.type === "timeout"
+                ? "Timeout Uygula"
+                : modal.type === "delete_user"
+                ? "Hesabı Kalıcı Olarak Sil"
+                : modal.type === "delete_user_posts"
+                ? "Kullanıcının Gönderilerini Sil"
+                : "Onayla"}
             </h3>
             <input
               type={modal.type === "timeout" ? "number" : "text"}
               value={modalInput}
               onChange={(e) => setModalInput(e.target.value)}
-              placeholder={modal.type === "ban" ? "Ban sebebi (opsiyonel)" : "Kaç saat? (varsayılan: 24)"}
+              placeholder={
+                modal.type === "ban"
+                  ? "Ban sebebi (opsiyonel)"
+                  : modal.type === "timeout"
+                  ? "Kaç saat? (varsayılan: 24)"
+                  : modal.type === "delete_user"
+                  ? "Bu hesabı kalıcı olarak silmek için 'SİL' yazın"
+                  : modal.type === "delete_user_posts"
+                  ? "Tüm gönderileri silmek için onaylayın"
+                  : ""
+              }
               className="w-full bg-gray-50 text-gray-900 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:border-blue-400 focus:outline-none mb-4"
               autoFocus
             />
@@ -301,6 +328,13 @@ export default function AdminPage() {
                   color="red"
                 >
                   Hesabı Sil
+                </ActionBtn>
+                <ActionBtn
+                  onClick={() => { setModal({ type: 'delete_user_posts', userId: user.id }); setModalInput(''); }}
+                  loading={actionLoading === user.id + 'delete_user_posts'}
+                  color="red"
+                >
+                  Gönderilerini Sil
                 </ActionBtn>
               </div>
             </div>

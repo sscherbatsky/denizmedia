@@ -122,13 +122,23 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, message: "Erişim engeli kaldırıldı." });
     }
     case "delete_post": {
+      if (!postId) return NextResponse.json({ error: "postId gerekli." }, { status: 400 });
       await prisma.post.delete({ where: { id: postId } });
       return NextResponse.json({ success: true, message: "Gönderi silindi." });
     }
     case "delete_user": {
-      // remove user completely from system
+      if (!userId) return NextResponse.json({ error: "userId gerekli." }, { status: 400 });
+      const target = await prisma.user.findUnique({ where: { id: userId } });
+      if (!target) return NextResponse.json({ error: "Kullanıcı bulunamadı." }, { status: 404 });
+      if (target.isAdmin) return NextResponse.json({ error: "Admin hesapları silinemez." }, { status: 403 });
+      // remove user completely from system (cascades where defined)
       await prisma.user.delete({ where: { id: userId } });
       return NextResponse.json({ success: true, message: "Kullanıcı tamamen silindi.", userId });
+    }
+    case "delete_user_posts": {
+      if (!userId) return NextResponse.json({ error: "userId gerekli." }, { status: 400 });
+      const result = await prisma.post.deleteMany({ where: { authorId: userId } });
+      return NextResponse.json({ success: true, message: `${result.count} gönderi silindi.` });
     }
     default:
       return NextResponse.json({ error: "Geçersiz işlem." }, { status: 400 });
