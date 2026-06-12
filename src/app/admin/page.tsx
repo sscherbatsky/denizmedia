@@ -254,7 +254,7 @@ export default function AdminPage() {
                 </>
               )}
               {modal.type === 'delete_user' && (
-                <div className="mb-2 text-sm text-gray-600">Bu işlem geri alınamaz. Onaylamak için 'SİL' yazın.</div>
+                <div className="mb-2 text-sm text-gray-600">Bu işlem geri alınamaz. Onaylamak için 'SİL yarark' yazın.</div>
               )}
               {modal.type === 'ban' && (
                 <input value={modalInput} onChange={e => setModalInput(e.target.value)} placeholder="Ban sebebi (opsiyonel)" className="w-full border p-2 rounded mb-2" />
