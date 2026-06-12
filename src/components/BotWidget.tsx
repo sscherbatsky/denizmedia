@@ -130,12 +130,19 @@ export default function BotWidget() {
 
   if (pathname?.startsWith('/auth')) return null;
 
+  useEffect(() => {
+    function handler(e: Event) {
+      const detail = (e as CustomEvent)?.detail;
+      if (detail && detail.action === 'open') setOpen(true);
+      else if (detail && detail.action === 'close') setOpen(false);
+      else setOpen((s) => !s);
+    }
+    window.addEventListener('toggleBotWidget', handler as EventListener);
+    return () => window.removeEventListener('toggleBotWidget', handler as EventListener);
+  }, []);
+
   return (
     <>
-      <div className="bot-button">
-        <button onClick={() => setOpen(!open)} className="bg-blue-500 text-white p-3 rounded-full shadow-lg">🤖</button>
-      </div>
-
       {open && (
         <div className="bot-panel">
           <div className="bg-white border border-gray-200 rounded-xl shadow-lg w-80 max-w-full p-3 sm:w-80">

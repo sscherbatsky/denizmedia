@@ -44,6 +44,10 @@ export default function SettingsPage() {
           setBio(data.bio || "");
           setProfileImage(data.profileImage || "");
           setProfilePreview(data.profileImage || "");
+          // apply theme color globally
+          if (data.themeColor) {
+            try { document.documentElement.style.setProperty('--theme-accent', data.themeColor); } catch {}
+          }
             setIsPrivate(!!data.isPrivate);
             setShowFollowers(data.showFollowers ?? true);
             setShowFollowing(data.showFollowing ?? true);
@@ -65,6 +69,7 @@ export default function SettingsPage() {
     const data = await res.json();
     if (res.ok) {
       setProfileImage(data.url);
+      setProfilePreview(data.url);
     } else {
       setProfilePreview("");
       setProfileImage("");
@@ -91,9 +96,24 @@ export default function SettingsPage() {
         setError(data.error);
       } else {
         setMessage("Profil güncellendi!");
+        // apply theme globally when saved
+        try { document.documentElement.style.setProperty('--theme-accent', themeColor || '#3b82f6'); } catch {}
       }
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDeactivate = async () => {
+    if (!confirm('Hesabınızı kapatmak istediğinizden emin misiniz? Bu işlem erişimi engeller.')) return;
+    const res = await fetch('/api/profile/deactivate', { method: 'POST' });
+    if (res.ok) {
+      alert('Hesabınız kapatıldı. Tarayıcıdan çıkış yapılacak.');
+      // sign out on client
+      window.location.href = '/auth/login';
+    } else {
+      const j = await res.json();
+      alert(j?.error || 'Hesap kapatılamadı.');
     }
   };
 

@@ -241,6 +241,14 @@ export default function ConversationPage() {
           </button>
           <button
             type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent('toggleBotWidget'))}
+            className="text-gray-400 hover:text-blue-600 p-2 rounded-full hover:bg-blue-50 transition"
+            title="DenizBot"
+          >
+            <span className="text-lg">🤖</span>
+          </button>
+          <button
+            type="button"
             onClick={startRecording}
             className="text-gray-400 hover:text-red-500 p-2 rounded-full hover:bg-red-50 transition"
             title="Sesli Mesaj"

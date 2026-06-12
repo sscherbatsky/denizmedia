@@ -10,6 +10,7 @@
   --text-primary: #111827;
   --text-secondary: #6b7280;
   --text-muted: #9ca3af;
+  --theme-accent: #3b82f6;
 }
 
 body {
@@ -103,9 +104,9 @@ body {
 }
 
 .logo-glow:hover {
-  filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.6))
-          drop-shadow(0 0 20px rgba(59, 130, 246, 0.4))
-          drop-shadow(0 0 40px rgba(59, 130, 246, 0.2));
+  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--theme-accent) 60%, transparent))
+          drop-shadow(0 0 20px color-mix(in srgb, var(--theme-accent) 40%, transparent))
+          drop-shadow(0 0 40px color-mix(in srgb, var(--theme-accent) 20%, transparent));
 }
 
 /* Page transition */
@@ -120,7 +121,7 @@ body {
 
 /* Nav icon active indicator */
 .nav-active {
-  color: #3b82f6;
+  color: var(--theme-accent);
   position: relative;
 }
 
@@ -133,7 +134,7 @@ body {
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: #3b82f6;
+  background: var(--theme-accent);
 }
 
 /* Badge pulse */
