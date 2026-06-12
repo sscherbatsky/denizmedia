@@ -16,19 +16,22 @@ export default function RightSidebar() {
   const [verse, setVerse] = useState<VerseResp | null>(null);
   const [aturk, setAturk] = useState<{ quote?: { text: string }; hourIndex?: number } | null>(null);
   const verseTimer = useRef<number | null>(null);
-
-  if (pathname?.startsWith('/auth')) return null;
+  const isAuthPage = pathname?.startsWith('/auth');
 
   useEffect(() => {
+    if (isAuthPage) return;
+
     let mounted = true;
     fetch('/api/top-posts')
       .then(r => r.json())
       .then(data => { if (mounted) setTop(data); })
       .catch(() => {});
     return () => { mounted = false; };
-  }, []);
+  }, [isAuthPage]);
 
   useEffect(() => {
+    if (isAuthPage) return;
+
     let mounted = true;
     const load = () => {
       fetch('/api/quran/verse')
@@ -44,7 +47,9 @@ export default function RightSidebar() {
     // refresh every minute to pick up hour changes
     verseTimer.current = window.setInterval(load, 60 * 1000);
     return () => { mounted = false; if (verseTimer.current) clearInterval(verseTimer.current); };
-  }, []);
+  }, [isAuthPage]);
+
+  if (isAuthPage) return null;
 
   return (
     <>

@@ -128,9 +128,11 @@ export default function BotWidget() {
     }, speed);
   }
 
-  if (pathname?.startsWith('/auth')) return null;
+  const isAuthPage = pathname?.startsWith('/auth');
 
   useEffect(() => {
+    if (isAuthPage) return;
+
     function handler(e: Event) {
       const detail = (e as CustomEvent)?.detail;
       if (detail && detail.action === 'open') setOpen(true);
@@ -139,7 +141,9 @@ export default function BotWidget() {
     }
     window.addEventListener('toggleBotWidget', handler as EventListener);
     return () => window.removeEventListener('toggleBotWidget', handler as EventListener);
-  }, []);
+  }, [isAuthPage]);
+
+  if (isAuthPage) return null;
 
   return (
     <>
