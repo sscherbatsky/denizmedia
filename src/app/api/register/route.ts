@@ -49,7 +49,11 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({ id: user.id, username: user.username }, { status: 201 });
-  } catch {
-    return NextResponse.json({ error: "Bir hata oluştu." }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Bir hata oluştu.";
+    if (typeof message === "string" && message.includes("P1001")) {
+      return NextResponse.json({ error: "Veritabanına bağlanılamadı. .env DATABASE_URL ayarlarını kontrol edin." }, { status: 500 });
+    }
+    return NextResponse.json({ error: message || "Bir hata oluştu." }, { status: 500 });
   }
 }
