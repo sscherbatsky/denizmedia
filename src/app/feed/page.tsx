@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import PostCard from "@/components/PostCard";
 import PostForm from "@/components/PostForm";
+import RightSidebarModals from "@/components/RightSidebarModals";
 
 interface Post {
   id: string;
@@ -28,6 +29,7 @@ export default function FeedPage() {
   const router = useRouter();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeModal, setActiveModal] = useState<"trends" | "settings" | null>(null);
 
   const fetchPosts = useCallback(async () => {
     try {
@@ -69,7 +71,7 @@ export default function FeedPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
+      <Navbar onTrendsClick={() => setActiveModal("trends")} onSettingsClick={() => setActiveModal("settings")} />
       <main className="max-w-2xl mx-auto px-4 py-6 page-transition">
         <PostForm onPostCreated={fetchPosts} />
         <div className="mt-4 space-y-3">
@@ -88,6 +90,7 @@ export default function FeedPage() {
           )}
         </div>
       </main>
+      <RightSidebarModals activeModal={activeModal} onClose={() => setActiveModal(null)} />
     </div>
   );
 }

@@ -13,7 +13,12 @@ interface SearchResult {
   isVerified: boolean;
 }
 
-export default function Navbar() {
+interface NavbarProps {
+  onTrendsClick?: () => void;
+  onSettingsClick?: () => void;
+}
+
+export default function Navbar({ onTrendsClick, onSettingsClick }: NavbarProps) {
   const { data: session } = useSession();
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -160,12 +165,12 @@ export default function Navbar() {
               <span className="text-[11px] text-gray-500 mt-1">Shorts</span>
             </Link>
 
-            <Link href="/trends" className="flex flex-col items-center text-center p-1 hover:bg-gray-50 rounded-md">
-              <svg className={`w-5 h-5 ${isActive('/trends') ? 'text-blue-500' : 'text-gray-500'}`} viewBox="0 0 24 24" fill="currentColor">
+            <button onClick={() => { onTrendsClick?.(); setMenuOpen(false); }} className="flex flex-col items-center text-center p-1 hover:bg-gray-50 rounded-md">
+              <svg className="w-5 h-5 text-gray-500" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z" />
               </svg>
               <span className="text-[11px] text-gray-500 mt-1">Trendler</span>
-            </Link>
+            </button>
 
             <Link href="/events" className="flex flex-col items-center text-center p-1 hover:bg-gray-50 rounded-md">
               <svg className={`w-5 h-5 ${isActive('/events') ? 'text-blue-500' : 'text-gray-500'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -204,13 +209,13 @@ export default function Navbar() {
               <span className="text-[11px] text-gray-500 mt-1">Profil</span>
             </Link>
 
-            <Link href="/settings" className="flex flex-col items-center text-center p-1 hover:bg-gray-50 rounded-md">
-              <svg className={`w-5 h-5 ${isActive('/settings') ? 'text-blue-500' : 'text-gray-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <button onClick={() => { onSettingsClick?.(); setMenuOpen(false); }} className="flex flex-col items-center text-center p-1 hover:bg-gray-50 rounded-md">
+              <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
               <span className="text-[11px] text-gray-500 mt-1">Ayarlar</span>
-            </Link>
+            </button>
 
             <button
               onClick={() => signOut({ callbackUrl: "/auth/login" })}
@@ -250,10 +255,21 @@ export default function Navbar() {
             >
               <span>🤖</span> DenizBOT
             </button>
+            <button
+              onClick={() => { onTrendsClick?.(); setMenuOpen(false); }}
+              className="text-left text-gray-700 hover:text-gray-900 hover:bg-gray-50 px-3 py-2.5 rounded-xl text-sm transition flex items-center gap-3"
+            >
+              <span>🔥</span> Trendler
+            </button>
             <MobileNavLink href="/messages" onClick={() => setMenuOpen(false)} icon="💬" badge={msgCount}>Mesajlar</MobileNavLink>
             <MobileNavLink href="/notifications" onClick={() => setMenuOpen(false)} icon="🔔" badge={notifCount}>Bildirimler</MobileNavLink>
             <MobileNavLink href={`/profile/${username}`} onClick={() => setMenuOpen(false)} icon="👤">Profil</MobileNavLink>
-            <MobileNavLink href="/settings" onClick={() => setMenuOpen(false)} icon="⚙️">Ayarlar</MobileNavLink>
+            <button
+              onClick={() => { onSettingsClick?.(); setMenuOpen(false); }}
+              className="text-left text-gray-700 hover:text-gray-900 hover:bg-gray-50 px-3 py-2.5 rounded-xl text-sm transition flex items-center gap-3"
+            >
+              <span>⚙️</span> Ayarlar
+            </button>
             <button
               onClick={() => { signOut({ callbackUrl: "/auth/login" }); setMenuOpen(false); }}
               className="text-left text-red-500 hover:bg-red-50 px-3 py-2.5 rounded-xl text-sm transition flex items-center gap-3"

@@ -55,6 +55,7 @@ export default function ProfilePage() {
       return;
     }
     if (status === "authenticated") {
+      setLoading(true);
       Promise.all([
         fetch(`/api/users/${username}`).then((r) => r.json()),
         fetch(`/api/users/${username}/posts`).then((r) => r.json()),
@@ -74,6 +75,12 @@ export default function ProfilePage() {
           setPostsError(postsData?.error || "");
         }
         setLoading(false);
+      }).catch((err) => {
+        console.error("Profile yüklenirken hata:", err);
+        setLoading(false);
+        setUser(null);
+        setPosts([]);
+        setPostsError("Profil yüklenirken hata oluştu.");
       });
     }
   }, [status, username, router]);
