@@ -55,6 +55,15 @@ export default function AdminPage() {
         fetch("/api/admin?action=users"),
         fetch("/api/admin?action=stats"),
       ]);
+      
+      if (!uRes.ok || !sRes.ok) {
+        setMessage("Admin paneline erişim reddedildi. Admin olmanız gerekli.");
+        setUsers([]);
+        setStats(null);
+        setLoading(false);
+        return;
+      }
+      
       const uJson = await uRes.json();
       const sJson = await sRes.json();
       setUsers(Array.isArray(uJson) ? uJson : []);
@@ -62,6 +71,8 @@ export default function AdminPage() {
     } catch (e) {
       console.error(e);
       setMessage("Veri yüklenirken hata oldu.");
+      setUsers([]);
+      setStats(null);
     } finally {
       setLoading(false);
     }

@@ -14,6 +14,7 @@ export default function Home() {
     } else if (status === "unauthenticated") {
       router.replace("/auth/login");
     }
+    // loading durumunda hiçbir şey yapma, session yüklenene kadar bekle
   }, [status, router]);
 
   return (

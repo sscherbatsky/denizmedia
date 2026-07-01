@@ -30,10 +30,17 @@ export default function FeedPage() {
   const [loading, setLoading] = useState(true);
 
   const fetchPosts = useCallback(async () => {
-    const res = await fetch("/api/posts");
-    const data = await res.json();
-    setPosts(data);
-    setLoading(false);
+    try {
+      const res = await fetch("/api/posts");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      setPosts(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Gönderiler yüklenirken hata:", err);
+      setPosts([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -42,7 +49,6 @@ export default function FeedPage() {
       return;
     }
     if (status === "authenticated") {
-      fetch("/api/admin/init");
       fetchPosts();
     }
   }, [status, router, fetchPosts]);
