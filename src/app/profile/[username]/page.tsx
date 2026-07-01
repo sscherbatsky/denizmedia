@@ -14,8 +14,11 @@ interface UserProfile {
   bio: string | null;
   profileImage: string | null;
   isVerified: boolean;
+  isPrivate: boolean;
   createdAt: string;
   isFollowing: boolean;
+  followPending: boolean;
+  canViewPosts: boolean;
   _count: { posts: number; followers: number; following: number };
 }
 
@@ -43,6 +46,8 @@ export default function ProfilePage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [following, setFollowing] = useState(false);
+  const [followPending, setFollowPending] = useState(false);
+  const [postsError, setPostsError] = useState("");
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -60,7 +65,14 @@ export default function ProfilePage() {
         }
         setUser(userData);
         setFollowing(userData.isFollowing);
-        setPosts(postsData);
+        setFollowPending(!!userData.followPending);
+        if (Array.isArray(postsData)) {
+          setPosts(postsData);
+          setPostsError("");
+        } else {
+          setPosts([]);
+          setPostsError(postsData?.error || "");
+        }
         setLoading(false);
       });
     }
@@ -81,17 +93,36 @@ export default function ProfilePage() {
   }, [user]);
 
   const handleFollow = async () => {
+    const hadFollowRecord = following || followPending;
     const res = await fetch(`/api/users/${username}/follow`, { method: "POST" });
     const data = await res.json();
-    setFollowing(data.following);
+    const hasFollowRecord = !!data.following || !!data.pending;
+    setFollowing(!!data.following);
+    setFollowPending(!!data.pending);
     if (user) {
       setUser({
         ...user,
+        isFollowing: !!data.following,
+        followPending: !!data.pending,
+        canViewPosts: !!data.following || user.canViewPosts,
         _count: {
           ...user._count,
-          followers: user._count.followers + (data.following ? 1 : -1),
+          followers: user._count.followers + (hasFollowRecord === hadFollowRecord ? 0 : hasFollowRecord ? 1 : -1),
         },
       });
+    }
+  };
+
+  const handleBlock = async () => {
+    const confirmBlock = confirm(`${user?.displayName || user?.username} engellensin mi? Engellerseniz bu kullanıcıyı bir daha görmeyeceksiniz.`);
+    if (!confirmBlock) return;
+    const res = await fetch('/api/blocks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ blockedId: user?.id }) });
+    if (res.ok) {
+      alert('Kullanıcı engellendi.');
+      router.push('/feed');
+    } else {
+      const data = await res.json().catch(() => ({}));
+      alert(data.error || 'Engelleme başarısız.');
     }
   };
 
@@ -160,7 +191,7 @@ export default function ProfilePage() {
                       onClick={handleFollow}
                       className={`text-sm px-4 py-1.5 rounded-full transition ${following ? "bg-gray-100 text-gray-700 hover:bg-red-50 hover:text-red-500" : "bg-blue-500 text-white hover:bg-blue-600"}`}
                     >
-                      {following ? "Takipten Çık" : "Takip Et"}
+                      {following ? "Takipten Çık" : followPending ? "İstek Gönderildi" : "Takip Et"}
                     </button>
                     <button
                       onClick={async () => {
@@ -176,6 +207,12 @@ export default function ProfilePage() {
                     >
                       Mesaj Gönder
                     </button>
+                    <button
+                      onClick={handleBlock}
+                      className="bg-red-50 text-red-600 text-sm px-4 py-1.5 rounded-full hover:bg-red-100 transition"
+                    >
+                      Engelle
+                    </button>
                   </>
                 )}
               </div>
@@ -183,16 +220,24 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        <div className="space-y-3">
-          {posts.map((post) => (
-            <PostCard key={post.id} {...post} onDelete={handleDelete} />
-          ))}
-          {posts.length === 0 && (
+        {user.isPrivate && !isOwnProfile && !following ? (
+          <div className="bg-white border border-gray-200 rounded-2xl p-10 text-center text-gray-500">
+            <div className="text-3xl mb-3">🔒</div>
+            <p className="text-lg font-semibold text-gray-800">Bu hesap özel</p>
+            <p className="text-sm mt-2">Gönderileri görmek için takip isteğinin kabul edilmesi gerekiyor.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {posts.map((post) => (
+              <PostCard key={post.id} {...post} onDelete={handleDelete} />
+            ))}
+            {posts.length === 0 && (
             <div className="text-center py-12 text-gray-500">
               <p>Henüz gönderi yok.</p>
             </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </main>
     </div>
   );

@@ -35,6 +35,7 @@ export async function GET(_req: Request, { params }: { params: { username: strin
 
   const session = await getServerSession(authOptions);
   let isFollowing = false;
+  let followPending = false;
   if (session?.user?.id) {
     const follow = await prisma.follow.findUnique({
       where: {
@@ -44,8 +45,28 @@ export async function GET(_req: Request, { params }: { params: { username: strin
         },
       },
     });
-    isFollowing = !!follow;
+    isFollowing = !!follow?.accepted;
+    followPending = !!follow && !follow.accepted;
   }
 
-  return NextResponse.json({ ...user, isFollowing });
+  const isOwnProfile = session?.user?.id === user.id;
+
+  if (session?.user?.id && session.user.id !== user.id) {
+    const blocked = await prisma.block.findFirst({
+      where: {
+        OR: [
+          { blockerId: user.id, blockedId: session.user.id },
+          { blockerId: session.user.id, blockedId: user.id },
+        ],
+      },
+    });
+    if (blocked) {
+      isBlocked = true;
+      return NextResponse.json({ error: "Bu kullanıcıya erişiminiz engellendi." }, { status: 403 });
+    }
+  }
+
+  const canViewPosts = !user.isPrivate || isOwnProfile || isFollowing;
+
+  return NextResponse.json({ ...user, isFollowing, followPending, canViewPosts, isBlocked });
 }

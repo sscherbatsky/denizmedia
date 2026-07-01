@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { useSession } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 
@@ -29,6 +29,10 @@ export default function SettingsPage() {
   const [passwordSaving, setPasswordSaving] = useState(false);
   const [passwordMessage, setPasswordMessage] = useState("");
   const [passwordError, setPasswordError] = useState("");
+  const [deactivatePassword, setDeactivatePassword] = useState("");
+  const [deactivateDays, setDeactivateDays] = useState("");
+  const [deactivateSaving, setDeactivateSaving] = useState(false);
+  const [deactivateError, setDeactivateError] = useState("");
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -51,7 +55,7 @@ export default function SettingsPage() {
             setIsPrivate(!!data.isPrivate);
             setShowFollowers(data.showFollowers ?? true);
             setShowFollowing(data.showFollowing ?? true);
-            setThemeColor(data.themeColor || "");
+            setThemeColor(data.themeColor || "#3b82f6");
           setLoading(false);
         });
     }
@@ -88,7 +92,7 @@ export default function SettingsPage() {
       const res = await fetch("/api/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, displayName, bio, profileImage: profileImage || null, isPrivate, showFollowers, showFollowing, themeColor }),
+        body: JSON.stringify({ username, displayName, bio, profileImage: profileImage || null, isPrivate, showFollowers, showFollowing, themeColor: themeColor || "#3b82f6" }),
       });
 
       const data = await res.json();
@@ -104,16 +108,34 @@ export default function SettingsPage() {
     }
   };
 
-  const handleDeactivate = async () => {
-    if (!confirm('Hesabınızı kapatmak istediğinizden emin misiniz? Bu işlem erişimi engeller.')) return;
-    const res = await fetch('/api/profile/deactivate', { method: 'POST' });
-    if (res.ok) {
-      alert('Hesabınız kapatıldı. Tarayıcıdan çıkış yapılacak.');
-      // sign out on client
-      window.location.href = '/auth/login';
-    } else {
-      const j = await res.json();
-      alert(j?.error || 'Hesap kapatılamadı.');
+  const handleDeactivate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setDeactivateError("");
+
+    if (!deactivatePassword) {
+      setDeactivateError("Hesabı kapatmak için şifrenizi girin.");
+      return;
+    }
+
+    setDeactivateSaving(true);
+    try {
+      const res = await fetch('/api/profile/deactivate', {
+        method: 'POST',
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          password: deactivatePassword,
+          durationDays: deactivateDays ? Number(deactivateDays) : null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setDeactivateError(data?.error || 'Hesap kapatılamadı.');
+        return;
+      }
+
+      await signOut({ callbackUrl: "/auth/login" });
+    } finally {
+      setDeactivateSaving(false);
     }
   };
 
@@ -213,7 +235,7 @@ export default function SettingsPage() {
 
             <div>
               <label className="block text-sm text-gray-500 mb-1.5">Tema Rengi</label>
-              <input type="color" value={themeColor} onChange={(e) => setThemeColor(e.target.value)} className="w-16 h-9 rounded" />
+              <input type="color" value={themeColor || "#3b82f6"} onChange={(e) => setThemeColor(e.target.value)} className="w-16 h-9 rounded" />
             </div>
           </div>
 
@@ -312,6 +334,53 @@ export default function SettingsPage() {
               className="w-full bg-gray-700 text-white font-semibold py-3 rounded-xl hover:bg-gray-800 disabled:opacity-50 transition shadow-sm"
             >
               {passwordSaving ? "Değiştiriliyor..." : "Şifre Değiştir"}
+            </button>
+          </form>
+        </div>
+
+        <div className="mt-10 pt-8 border-t border-red-100">
+          <h2 className="text-lg font-bold text-red-700 mb-2">Hesabı Kapat</h2>
+          <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl p-3 mb-4">
+            Hesabını kapatırsan profilin ve etkileşimlerin devre dışı kalır. 30 gün içinde tekrar giriş yaparsan hesap otomatik açılır; 30 gün içinde giriş yapmazsan hesap kalıcı olarak kapanır.
+          </div>
+
+          <form onSubmit={handleDeactivate} className="space-y-4">
+            {deactivateError && (
+              <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl p-3">{deactivateError}</div>
+            )}
+
+            <div>
+              <label className="block text-sm text-gray-500 mb-1.5">Şifre</label>
+              <input
+                type="password"
+                value={deactivatePassword}
+                onChange={(e) => setDeactivatePassword(e.target.value)}
+                className="w-full bg-white text-gray-900 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-100 transition"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm text-gray-500 mb-1.5">İsteğe Bağlı Kapalı Kalma Süresi</label>
+              <select
+                value={deactivateDays}
+                onChange={(e) => setDeactivateDays(e.target.value)}
+                className="w-full bg-white text-gray-900 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-100 transition"
+              >
+                <option value="">Süre seçme</option>
+                <option value="1">1 gün</option>
+                <option value="7">7 gün</option>
+                <option value="14">14 gün</option>
+                <option value="30">30 gün</option>
+              </select>
+            </div>
+
+            <button
+              type="submit"
+              disabled={deactivateSaving}
+              className="w-full bg-red-600 text-white font-semibold py-3 rounded-xl hover:bg-red-700 disabled:opacity-50 transition shadow-sm"
+            >
+              {deactivateSaving ? "Kapatılıyor..." : "Hesabımı Kapat"}
             </button>
           </form>
         </div>

@@ -28,6 +28,16 @@ export async function GET(req: Request, { params }: { params: { username: string
     }
   }
 
+  // If viewer and profile user have a block relation, deny access
+  const session = await getServerSession(authOptions);
+  const viewerId = session?.user?.id;
+  if (viewerId && viewerId !== user.id) {
+    const blocked = await prisma.block.findFirst({ where: { OR: [{ blockerId: user.id, blockedId: viewerId }, { blockerId: viewerId, blockedId: user.id }] } });
+    if (blocked) {
+      return NextResponse.json({ error: "Bu kullanıcıya erişiminiz engellendi." }, { status: 403 });
+    }
+  }
+
   const posts = await prisma.post.findMany({
     where: { authorId: user.id },
     orderBy: { createdAt: "desc" },

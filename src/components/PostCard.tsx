@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
 import { tr } from "date-fns/locale";
 
@@ -27,11 +28,13 @@ interface PostProps {
 
 export default function PostCard({ id, content, image, author, likes, comments, createdAt, onDelete }: PostProps) {
   const { data: session } = useSession();
+  const router = useRouter();
   const [isLiked, setIsLiked] = useState(likes.some((l) => l.userId === session?.user?.id));
   const [likeCount, setLikeCount] = useState(likes.length);
   const [animateLike, setAnimateLike] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [showComments, setShowComments] = useState(false);
+  const [showReportMenu, setShowReportMenu] = useState(false);
   const [commentList, setCommentList] = useState<Array<{
     id: string;
     content: string;
@@ -90,10 +93,31 @@ export default function PostCard({ id, content, image, author, likes, comments, 
     if (res.ok && onDelete) onDelete(id);
   };
 
+  const handleReport = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const reason = prompt('Lütfen şikayet sebebini yazın (ör: spam, taciz, müstehcen, diğer):');
+    if (!reason) return;
+    const details = prompt('İsterseniz detay ekleyin:') || undefined;
+    const res = await fetch('/api/reports', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ targetUserId: author.id, postId: id, reason, details }) });
+    if (res.ok) alert('Şikayetiniz gönderildi. Teşekkürler.');
+    else alert('Şikayet gönderilemedi.');
+
+    const block = confirm('Bu kullanıcıyı engellemek ister misiniz? Engellerseniz bu kullanıcıyı bir daha görmeyeceksiniz.');
+    if (block) {
+      const bres = await fetch('/api/blocks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ blockedId: author.id }) });
+      if (bres.ok) alert('Kullanıcı engellendi.'); else alert('Engelleme başarısız.');
+    }
+  };
+
+  const openPost = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    router.push(`/post/${id}`);
+  };
+
   return (
-    <div className="bg-white border border-gray-200 rounded-2xl p-4 hover:shadow-md transition shadow-sm post-appear">
+    <div onClick={openPost} className="bg-white border border-gray-200 rounded-2xl p-4 hover:shadow-md transition shadow-sm post-appear cursor-pointer">
       <div className="flex items-start gap-3">
-        <Link href={`/profile/${author.username}`}>
+        <Link href={`/profile/${author.username}`} onClick={(e) => e.stopPropagation()}>
           <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-sm font-bold text-blue-600 shrink-0 overflow-hidden">
             {author.profileImage ? (
               <img src={author.profileImage} alt="" className="w-full h-full object-cover" />
@@ -102,9 +126,35 @@ export default function PostCard({ id, content, image, author, likes, comments, 
             )}
           </div>
         </Link>
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 relative">
+          <div className="absolute right-2 top-1 z-10">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowReportMenu((prev) => !prev);
+              }}
+              className="text-gray-400 hover:text-red-500"
+              aria-label="Şikayet"
+            >
+              ⋯
+            </button>
+            {showReportMenu && (
+              <div className="mt-2 rounded-xl border border-red-100 bg-white shadow-lg text-sm text-red-600 w-40">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowReportMenu(false);
+                    handleReport(e);
+                  }}
+                  className="w-full text-left px-3 py-3 hover:bg-red-50 flex items-center gap-2"
+                >
+                  <span className="text-red-500">!</span> Şikayet Et
+                </button>
+              </div>
+            )}
+          </div>
           <div className="flex items-center gap-1 flex-wrap">
-            <Link href={`/profile/${author.username}`} className="font-semibold text-gray-900 hover:underline text-sm">
+            <Link href={`/profile/${author.username}`} onClick={(e) => e.stopPropagation()} className="font-semibold text-gray-900 hover:underline text-sm">
               {author.displayName || author.username}
             </Link>
             {author.isVerified && (
@@ -112,7 +162,7 @@ export default function PostCard({ id, content, image, author, likes, comments, 
                 <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
               </svg>
             )}
-            <Link href={`/profile/${author.username}`} className="text-gray-400 text-sm">
+            <Link href={`/profile/${author.username}`} onClick={(e) => e.stopPropagation()} className="text-gray-400 text-sm">
               @{author.username}
             </Link>
             <span className="text-gray-300 text-sm">·</span>
@@ -120,7 +170,26 @@ export default function PostCard({ id, content, image, author, likes, comments, 
               {formatDistanceToNow(new Date(createdAt), { addSuffix: true, locale: tr })}
             </span>
           </div>
-          {content && <p className="text-gray-800 mt-1.5 whitespace-pre-wrap break-words text-sm leading-relaxed">{content}</p>}
+          {content && (
+            <p className="text-gray-800 mt-1.5 whitespace-pre-wrap break-words text-sm leading-relaxed">
+              {content.split(/(#[\p{L}0-9_]+|@[a-zA-Z0-9_\.\-]+)/u).map((part, i) => {
+                if (!part) return null;
+                if (part.startsWith("#")) {
+                  const tag = part.slice(1);
+                  return (
+                    <a key={i} href={`/tags/${encodeURIComponent(tag)}`} onClick={(e) => e.stopPropagation()} className="text-blue-500 hover:underline">{part}</a>
+                  );
+                }
+                if (part.startsWith("@")) {
+                  const uname = part.slice(1);
+                  return (
+                    <a key={i} href={`/profile/${uname}`} onClick={(e) => e.stopPropagation()} className="text-blue-500 hover:underline">{part}</a>
+                  );
+                }
+                return <span key={i}>{part}</span>;
+              })}
+            </p>
+          )}
           {image && (
             <div className="mt-2 rounded-xl overflow-hidden">
               <img src={image} alt="" className="max-w-full rounded-xl" loading="lazy" />
@@ -153,15 +222,16 @@ export default function PostCard({ id, content, image, author, likes, comments, 
 
           {showComments && (
             <div className="mt-3 border-t border-gray-100 pt-3">
-              <form onSubmit={handleComment} className="flex gap-2 mb-3">
+              <form onSubmit={handleComment} onClick={(e) => e.stopPropagation()} className="flex gap-2 mb-3">
                 <input
                   type="text"
                   value={commentText}
                   onChange={(e) => setCommentText(e.target.value)}
+                  onClick={(e) => e.stopPropagation()}
                   placeholder="Yorum yaz..."
                   className="flex-1 bg-gray-50 text-gray-900 text-sm rounded-full px-4 py-2 border border-gray-200 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
                 />
-                <button type="submit" className="bg-blue-500 text-white text-sm px-4 py-2 rounded-full hover:bg-blue-600 transition">
+                <button type="submit" onClick={(e) => e.stopPropagation()} className="bg-blue-500 text-white text-sm px-4 py-2 rounded-full hover:bg-blue-600 transition">
                   Gönder
                 </button>
               </form>

@@ -2,8 +2,10 @@
 
 import { useEffect, useState, useRef } from "react";
 import { usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
 
 export default function BotWidget() {
+  const { data: session } = useSession();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Array<{ id: string; from: "user" | "bot"; text: string; typing?: boolean; fullText?: string }>>([]);
   const [text, setText] = useState("");
@@ -39,6 +41,19 @@ export default function BotWidget() {
   useEffect(() => {
     localStorage.setItem('bot_local_pairs', JSON.stringify(localPairs));
   }, [localPairs]);
+
+  useEffect(() => {
+    if (!open || messages.length > 0) return;
+
+    const username = (session?.user?.username || session?.user?.name || "dostum").toString();
+    setMessages([
+      {
+        id: String(Date.now()) + "hello",
+        from: "bot",
+        text: `Selam ${username}`,
+      },
+    ]);
+  }, [open, messages.length, session]);
 
   const send = async () => {
     // allow sending when either text or an image is present

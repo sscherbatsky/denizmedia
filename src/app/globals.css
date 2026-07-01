@@ -168,6 +168,26 @@ body {
   animation: likePop 0.5s cubic-bezier(.2,.9,.3,1);
 }
 
+.bg-blue-500,
+.hover\:bg-blue-500:hover,
+.bg-blue-600,
+.hover\:bg-blue-600:hover {
+  background-color: var(--theme-accent) !important;
+}
+
+.text-blue-500,
+.hover\:text-blue-500:hover,
+.text-blue-600 {
+  color: var(--theme-accent) !important;
+}
+
+.border-blue-400,
+.border-blue-500,
+.focus\:border-blue-400:focus,
+.focus\:border-blue-500:focus {
+  border-color: var(--theme-accent) !important;
+}
+
 /* Bot widget */
 .bot-button { position: fixed; right: 20px; bottom: 20px; z-index: 60; }
 .bot-panel { position: fixed; right: 20px; bottom: 80px; width: 320px; max-height: 70vh; z-index: 60; }

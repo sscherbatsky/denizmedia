@@ -11,6 +11,7 @@ export default function PostForm({ onPostCreated }: PostFormProps) {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const playPostSound = () => {
@@ -38,6 +39,7 @@ export default function PostForm({ onPostCreated }: PostFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!content.trim() && !imageFile) return;
+    setError("");
     setLoading(true);
 
     try {
@@ -50,7 +52,7 @@ export default function PostForm({ onPostCreated }: PostFormProps) {
         if (uploadRes.ok) imageUrl = uploadData.url;
         else {
           console.error("Upload error:", uploadData);
-          alert(uploadData.error || "Fotoğraf yüklenemedi.");
+          setError(uploadData.error || "Fotoğraf yüklenemedi.");
           setLoading(false);
           return;
         }
@@ -67,6 +69,9 @@ export default function PostForm({ onPostCreated }: PostFormProps) {
         setContent("");
         removeImage();
         onPostCreated();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || "Gönderi paylaşılamadı.");
       }
     } finally {
       setLoading(false);
@@ -76,6 +81,7 @@ export default function PostForm({ onPostCreated }: PostFormProps) {
   return (
     <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
       <form onSubmit={handleSubmit}>
+        {error && <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl p-3 mb-3">{error}</div>}
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}

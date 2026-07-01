@@ -150,8 +150,9 @@ export default function AdminPage() {
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold">Admin Panel</h1>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button className="text-sm text-gray-600" onClick={() => router.push('/feed')}>Ana Sayfa</button>
+            <button className="text-sm text-blue-600" onClick={() => router.push('/admin/reports')}>Şikayetler</button>
           </div>
         </div>
 

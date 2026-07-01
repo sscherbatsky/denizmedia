@@ -21,6 +21,10 @@ model User {
   banReason     String?
   timeoutUntil  DateTime?
   isRestricted  Boolean   @default(false)
+  deactivatedAt DateTime?
+  deactivateUntil DateTime?
+  permanentCloseAt DateTime?
+  permanentlyClosedAt DateTime?
   lastIp        String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -30,8 +34,13 @@ model User {
   themeColor    String?
   botPairs BotPair[]
 
+  blocking          Block[]        @relation("blocker")
+  blockedBy         Block[]        @relation("blocked")
+
   accounts          Account[]
   posts             Post[]
+  events            Event[]
+  shorts            Short[]
   likes             Like[]
   comments          Comment[]
   followers         Follow[]       @relation("following")
@@ -40,6 +49,9 @@ model User {
   conversations     ConversationParticipant[]
   notifications     Notification[] @relation("notifications")
   sentNotifications Notification[] @relation("sentNotifications")
+  reportsSubmitted  Report[]       @relation("ReportReporter")
+  reportsTargeted   Report[]       @relation("ReportTarget")
+  reportsResolved   Report[]       @relation("ReportResolver")
 }
 
 model Account {
@@ -68,8 +80,28 @@ model Post {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  likes    Like[]
-  comments Comment[]
+  likes        Like[]
+  comments     Comment[]
+  postHashtags PostHashtag[]
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  title       String
+  date        DateTime
+  description String?
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Short {
+  id        String   @id @default(cuid())
+  videoUrl  String
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
 }
 
 model Like {
@@ -167,4 +199,52 @@ model IpLog {
   createdAt DateTime @default(now())
 
   @@index([username])
+}
+
+model Hashtag {
+  id        String   @id @default(cuid())
+  tag       String   @unique
+  count     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  posts     PostHashtag[]
+}
+
+model PostHashtag {
+  id        String   @id @default(cuid())
+  postId    String
+  hashtagId String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  hashtag   Hashtag  @relation(fields: [hashtagId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([postId, hashtagId])
+  @@index([hashtagId])
+}
+
+model Block {
+  id         String   @id @default(cuid())
+  blockerId  String
+  blockedId  String
+  blocker    User     @relation("blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked    User     @relation("blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([blockerId, blockedId])
+}
+
+model Report {
+  id           String   @id @default(cuid())
+  reporterId   String
+  targetUserId String?
+  postId       String?
+  reason       String
+  details      String?
+  resolved     Boolean  @default(false)
+  resolvedById String?
+  createdAt    DateTime @default(now())
+
+  reporter     User?    @relation("ReportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  targetUser   User?    @relation("ReportTarget", fields: [targetUserId], references: [id], onDelete: Cascade)
+  resolvedBy   User?    @relation("ReportResolver", fields: [resolvedById], references: [id], onDelete: Cascade)
 }

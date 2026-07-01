@@ -47,6 +47,7 @@ export default function NotificationsPage() {
 
   const getNotifText = (type: string) => {
     switch (type) {
+      case "mention": return "seni etiketledi";
       case "like": return "gönderini beğendi";
       case "comment": return "gönderine yorum yaptı";
       case "follow": return "seni takip etti";
@@ -57,6 +58,7 @@ export default function NotificationsPage() {
 
   const getNotifIcon = (type: string) => {
     switch (type) {
+      case "mention": return <span className="text-purple-500">🏷️</span>;
       case "like": return <span className="text-red-500">❤️</span>;
       case "comment": return <span className="text-blue-500">💬</span>;
       case "follow": return <span className="text-green-500">👤</span>;
@@ -91,7 +93,7 @@ export default function NotificationsPage() {
             notifications.map((notif) => (
               <Link
                 key={notif.id}
-                href={notif.type === "follow" ? `/profile/${notif.from.username}` : notif.postId ? `/feed` : "#"}
+                href={notif.postId ? `/post/${notif.postId}` : `/profile/${notif.from.username}`}
                 className={`flex items-center gap-3 p-4 rounded-2xl transition ${
                   notif.read ? "bg-white" : "bg-blue-50 border border-blue-100"
                 } hover:shadow-sm`}

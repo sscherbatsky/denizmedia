@@ -43,6 +43,36 @@ export const authOptions: NextAuthOptions = {
           throw new Error("BANNED:" + (user.banReason || "Hesabınız yasaklandı."));
         }
 
+        if (user.permanentlyClosedAt) {
+          throw new Error("RESTRICTED:Bu hesap kalıcı olarak kapatılmış.");
+        }
+
+        if (user.deactivatedAt) {
+          const now = new Date();
+          const permanentCloseAt = user.permanentCloseAt ?? new Date(user.deactivatedAt.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+          if (permanentCloseAt <= now) {
+            await prisma.user.update({
+              where: { id: user.id },
+              data: {
+                permanentlyClosedAt: now,
+                isRestricted: true,
+              },
+            });
+            throw new Error("RESTRICTED:Bu hesap 30 gün içinde açılmadığı için kalıcı olarak kapatıldı.");
+          }
+
+          await prisma.user.update({
+            where: { id: user.id },
+            data: {
+              deactivatedAt: null,
+              deactivateUntil: null,
+              permanentCloseAt: null,
+              isRestricted: false,
+            },
+          });
+        }
+
         if (user.timeoutUntil && new Date(user.timeoutUntil) > new Date()) {
           throw new Error("TIMEOUT:" + user.timeoutUntil.toISOString());
         }

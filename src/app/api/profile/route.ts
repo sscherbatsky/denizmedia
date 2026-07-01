@@ -73,6 +73,10 @@ export async function PUT(req: Request) {
       bio: true,
       profileImage: true,
       isVerified: true,
+      isPrivate: true,
+      showFollowers: true,
+      showFollowing: true,
+      themeColor: true,
     },
   });
 

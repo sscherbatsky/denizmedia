@@ -71,6 +71,10 @@ export default function Navbar() {
 
   const username = (session.user as Record<string, unknown>)?.username as string;
   const isActive = (path: string) => pathname === path || pathname.startsWith(path + "/");
+  const openBot = () => {
+    window.dispatchEvent(new CustomEvent("toggleBotWidget", { detail: { action: "open" } }));
+    setMenuOpen(false);
+  };
 
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
@@ -156,12 +160,26 @@ export default function Navbar() {
               <span className="text-[11px] text-gray-500 mt-1">Shorts</span>
             </Link>
 
+            <Link href="/trends" className="flex flex-col items-center text-center p-1 hover:bg-gray-50 rounded-md">
+              <svg className={`w-5 h-5 ${isActive('/trends') ? 'text-blue-500' : 'text-gray-500'}`} viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z" />
+              </svg>
+              <span className="text-[11px] text-gray-500 mt-1">Trendler</span>
+            </Link>
+
             <Link href="/events" className="flex flex-col items-center text-center p-1 hover:bg-gray-50 rounded-md">
               <svg className={`w-5 h-5 ${isActive('/events') ? 'text-blue-500' : 'text-gray-500'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3M3 11h18M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
               <span className="text-[11px] text-gray-500 mt-1">Etkinlikler</span>
             </Link>
+
+            <button onClick={openBot} className="flex flex-col items-center text-center p-1 hover:bg-gray-50 rounded-md">
+              <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a6 6 0 016 6v3a3 3 0 01-3 3H9a3 3 0 01-3-3v-3a6 6 0 016-6zm-3 7h.01M15 13h.01M9 18l-2 2m8-2l2 2" />
+              </svg>
+              <span className="text-[11px] text-gray-500 mt-1">DenizBOT</span>
+            </button>
 
             <Link href="/messages" className="flex flex-col items-center text-center p-1 hover:bg-gray-50 rounded-md relative">
               <svg className={`w-5 h-5 ${isActive('/messages') ? 'text-blue-500' : 'text-gray-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -226,6 +244,12 @@ export default function Navbar() {
             <MobileNavLink href="/feed" onClick={() => setMenuOpen(false)} icon="🏠">Ana Sayfa</MobileNavLink>
             <MobileNavLink href="/shorts" onClick={() => setMenuOpen(false)} icon="🎬">Shorts</MobileNavLink>
             <MobileNavLink href="/events" onClick={() => setMenuOpen(false)} icon="📅">Etkinlikler</MobileNavLink>
+            <button
+              onClick={openBot}
+              className="text-left text-gray-700 hover:text-gray-900 hover:bg-gray-50 px-3 py-2.5 rounded-xl text-sm transition flex items-center gap-3"
+            >
+              <span>🤖</span> DenizBOT
+            </button>
             <MobileNavLink href="/messages" onClick={() => setMenuOpen(false)} icon="💬" badge={msgCount}>Mesajlar</MobileNavLink>
             <MobileNavLink href="/notifications" onClick={() => setMenuOpen(false)} icon="🔔" badge={notifCount}>Bildirimler</MobileNavLink>
             <MobileNavLink href={`/profile/${username}`} onClick={() => setMenuOpen(false)} icon="👤">Profil</MobileNavLink>

@@ -36,5 +36,19 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   const post = await prisma.post.findUnique({ where: { id: params.id }, select: { authorId: true } });
   if (post) await createNotification(post.authorId, session.user.id, "comment", params.id);
 
+  // parse mentions in comment and notify mentioned users
+  try {
+    const mentionRegex = /@([a-zA-Z0-9_\.\-]+)/g;
+    const mentionMatches = Array.from(content.matchAll(mentionRegex)).map((m) => m[1]);
+    for (const uname of Array.from(new Set(mentionMatches))) {
+      const mentioned = await prisma.user.findUnique({ where: { username: uname } });
+      if (mentioned) {
+        await createNotification(mentioned.id, session.user.id, 'mention', params.id);
+      }
+    }
+  } catch (e) {
+    console.error('Mention parse error', e);
+  }
+
   return NextResponse.json(comment, { status: 201 });
 }

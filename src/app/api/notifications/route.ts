@@ -36,3 +36,22 @@ export async function PUT() {
 
   return NextResponse.json({ success: true });
 }
+
+export async function POST(req: Request) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Giriş yapmanız gerekiyor." }, { status: 401 });
+  }
+
+  const { notificationId } = await req.json();
+  if (!notificationId) {
+    return NextResponse.json({ error: "notificationId gerekli." }, { status: 400 });
+  }
+
+  await prisma.notification.update({
+    where: { id: notificationId },
+    data: { read: true },
+  });
+
+  return NextResponse.json({ success: true });
+}

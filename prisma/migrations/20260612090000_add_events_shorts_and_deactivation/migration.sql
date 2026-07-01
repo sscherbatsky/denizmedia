@@ -1,0 +1,34 @@
+ALTER TABLE "User"
+ADD COLUMN "deactivatedAt" TIMESTAMP(3),
+ADD COLUMN "deactivateUntil" TIMESTAMP(3),
+ADD COLUMN "permanentCloseAt" TIMESTAMP(3),
+ADD COLUMN "permanentlyClosedAt" TIMESTAMP(3);
+
+CREATE TABLE "Event" (
+  "id" TEXT NOT NULL,
+  "title" TEXT NOT NULL,
+  "date" TIMESTAMP(3) NOT NULL,
+  "description" TEXT,
+  "authorId" TEXT NOT NULL,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3) NOT NULL,
+
+  CONSTRAINT "Event_pkey" PRIMARY KEY ("id")
+);
+
+CREATE TABLE "Short" (
+  "id" TEXT NOT NULL,
+  "videoUrl" TEXT NOT NULL,
+  "authorId" TEXT NOT NULL,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT "Short_pkey" PRIMARY KEY ("id")
+);
+
+ALTER TABLE "Event"
+ADD CONSTRAINT "Event_authorId_fkey"
+FOREIGN KEY ("authorId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE "Short"
+ADD CONSTRAINT "Short_authorId_fkey"
+FOREIGN KEY ("authorId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;

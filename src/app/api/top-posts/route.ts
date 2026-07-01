@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
   const posts = await prisma.post.findMany({

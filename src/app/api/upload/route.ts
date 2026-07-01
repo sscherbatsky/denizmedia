@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { randomUUID } from "crypto";
 
+export const runtime = "nodejs";
+
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
@@ -18,7 +20,19 @@ export async function POST(req: Request) {
 
   const validImageTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
   const validVideoTypes = ["video/mp4", "video/webm", "video/quicktime", "video/x-matroska"];
-  const fileType = (file && (file.type || "")) as string;
+  const extFromName = file.name?.split(".").pop()?.toLowerCase() || "";
+  const extensionTypes: Record<string, string> = {
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    png: "image/png",
+    gif: "image/gif",
+    webp: "image/webp",
+    mp4: "video/mp4",
+    webm: "video/webm",
+    mov: "video/quicktime",
+    mkv: "video/x-matroska",
+  };
+  const fileType = file.type || extensionTypes[extFromName] || "";
   if (fileType && ![...validImageTypes, ...validVideoTypes].includes(fileType)) {
     return NextResponse.json({ error: "Sadece JPEG/PNG/GIF/WebP resimler veya MP4/WebM/QuickTime videolar yüklenebilir." }, { status: 400 });
   }
@@ -27,7 +41,7 @@ export async function POST(req: Request) {
   const maxImageSize = 8 * 1024 * 1024;
   const maxVideoSize = 50 * 1024 * 1024;
   // Some runtimes may not expose `size` on File; guard it
-  const fileSize = (file as any).size as number | undefined;
+  const fileSize = file.size;
   if (fileSize) {
     if (validVideoTypes.includes(fileType) && fileSize > maxVideoSize) {
       return NextResponse.json({ error: "Video boyutu 50MB'dan büyük olamaz." }, { status: 400 });
@@ -35,6 +49,13 @@ export async function POST(req: Request) {
     if (validImageTypes.includes(fileType) && fileSize > maxImageSize) {
       return NextResponse.json({ error: "Resim boyutu 8MB'dan büyük olamaz." }, { status: 400 });
     }
+  }
+
+  if (!process.env.BLOB_READ_WRITE_TOKEN && process.env.VERCEL) {
+    return NextResponse.json(
+      { error: "Yükleme için BLOB_READ_WRITE_TOKEN ayarlanmalı." },
+      { status: 500 }
+    );
   }
 
   // Use Vercel Blob if BLOB_READ_WRITE_TOKEN is available, otherwise fallback to local
