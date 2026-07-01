@@ -145,7 +145,20 @@ export default function ProfilePage() {
     );
   }
 
-  if (!user) return null;
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navbar />
+        <main className="max-w-2xl mx-auto px-4 py-12 page-transition">
+          <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm text-center">
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Profil Bulunamadı</h2>
+            <p className="text-gray-600 mb-4">Bu kullanıcı mevcut değil veya profil yüklenirken hata oluştu.</p>
+            <Link href="/feed" className="text-blue-600 hover:underline">Ana Sayfaya Dön</Link>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   const isOwnProfile = session?.user?.username === username;
 
